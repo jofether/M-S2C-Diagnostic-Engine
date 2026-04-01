@@ -52,15 +52,21 @@ except (ImportError, OSError) as e:
                     file_scores[file_path] = 0.0
                 
                 snippet_lower = snippet.lower()
-                
-                # Count matching keywords
-                matches = sum(1 for word in query_words if len(word) > 2 and word in snippet_lower)
-                
-                # Bonus for file name matches
                 file_name_lower = file_path.lower()
-                file_matches = sum(1 for word in query_words if len(word) > 2 and word in file_name_lower)
                 
-                score = matches + (file_matches * 2)  # Boost file name matches
+                # All query words combined (for substring matching)
+                full_query = " ".join(query_words)
+                
+                # Strong bonus: query appears as substring in filename
+                if full_query in file_name_lower:
+                    score = 1000  # Very high score for exact substring match
+                else:
+                    # Regular word-based matching
+                    matches = sum(1 for word in query_words if len(word) > 2 and word in snippet_lower)
+                    # Bonus for file name matches (higher weight now: 5x instead of 2x)  
+                    file_matches = sum(1 for word in query_words if len(word) > 2 and word in file_name_lower)
+                    score = matches + (file_matches * 5)  # Increased boost for file name matches
+                
                 file_scores[file_path] += score
             
             # Sort by score
@@ -871,6 +877,7 @@ def compute_gating_weight(bug_description: str):
     Compute text vs visual contribution based on description quality and length.
     Better descriptions → higher text weight
     Shorter/vague descriptions → higher visual weight (screenshot more important)
+    Returns normalized values between 0 and 1 (not percentages).
     """
     desc_length = len(bug_description)
     detail_keywords = ["specifically", "specifically", "exactly", "exactly", "however", "although", "instead of", "should be"]
@@ -878,17 +885,17 @@ def compute_gating_weight(bug_description: str):
     
     # Longer, more detailed descriptions get higher text weight
     if desc_length > 200 and detail_count > 0:
-        text_weight = 70
-        visual_weight = 30
+        text_weight = 0.7
+        visual_weight = 0.3
     elif desc_length > 100:
-        text_weight = 50
-        visual_weight = 50
+        text_weight = 0.5
+        visual_weight = 0.5
     elif desc_length > 50:
-        text_weight = 35
-        visual_weight = 65
+        text_weight = 0.35
+        visual_weight = 0.65
     else:
-        text_weight = 20
-        visual_weight = 80
+        text_weight = 0.2
+        visual_weight = 0.8
     
     return text_weight, visual_weight
 
