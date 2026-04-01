@@ -50,7 +50,8 @@ def _count_braces_smart(text, start_pos):
 def extract_react_components(file_path: str) -> list:
     """
     Extract React components from JavaScript/JSX/TypeScript files using regex.
-    Robust error handling with UTF-8 encoding.
+    Now extracts both top-level components AND nested meaningful elements (h1-h6, buttons, etc).
+    This ensures smaller, more targeted snippets that include specific nodes.
     
     Returns tuples of (code, start_line, end_line) to preserve line numbers.
     
@@ -58,6 +59,7 @@ def extract_react_components(file_path: str) -> list:
     - Robust try/except for file reading
     - UTF-8 encoding with error handling
     - Line number calculation via newline counting
+    - Extract granular snippets for precise bug location
     
     Args:
         file_path: Path to the .jsx/.js/.tsx/.ts file
@@ -87,12 +89,8 @@ def extract_react_components(file_path: str) -> list:
         return []
     
     components = []
-    lines = content.split('\n')
     
-    # STRATEGY: Extract the minimal code snippet that contains the actual bug/content
-    # NOT the entire function declaration and wrapper
-    
-    # Find all JSX/return blocks (the actual content, not the wrapper)
+    # PHASE 1: Extract top-level return blocks (main components)
     try:
         # Look for "return" statements followed by JSX
         return_pattern = r'return\s*\(\s*<'
@@ -121,19 +119,50 @@ def extract_react_components(file_path: str) -> list:
                     closing_pos = content.find(')', content.find('>', tag_start))
                 if closing_pos == -1:
                     continue
+                else:
+                    closing_pos += 2  # Include the />\
             else:
+                # closing_pos is relative to tag_start, so add it back
                 closing_pos = tag_start + closing_match.end()
             
-            # Extract just the JSX content
+            # Extract just the JSX content (from opening < to closing >)
             snippet = content[tag_start:closing_pos].strip()
             
             # Validate and store with correct line numbers
             if len(snippet) > 20 and snippet.startswith('<'):
+                # Calculate line numbers: count newlines from start of file to this position
                 start_line = content[:tag_start].count('\n') + 1
                 end_line = content[:closing_pos].count('\n') + 1
                 components.append((snippet[:2000], start_line, end_line))
     except Exception as e:
         logger.debug(f"JSX return block extraction failed: {e}")
+    
+    # PHASE 2: Extract nested meaningful elements (h1-h6, buttons, forms, etc.)
+    # These are often the actual bug locations (styling issues, text sizing, etc.)
+    try:
+        # Extract heading tags and other semantic elements with their content
+        # Focus on specific UI elements that are likely bug locations
+        meaningful_tags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'button', 'input', 'form', 'label']
+        
+        for tag in meaningful_tags:
+            # Pattern: opening tag with content to closing tag
+            pattern = f'<{tag}[^>]*>.*?</{tag}>'
+            for match in re.finditer(pattern, content, re.DOTALL):
+                snippet = match.group(0).strip()
+                
+                # Only include if it's substantial enough and has className/style info
+                if len(snippet) > 25 and ('className' in snippet or 'style' in snippet or 'id=' in snippet):
+                    start_pos = match.start()
+                    end_pos = match.end()
+                    
+                    start_line = content[:start_pos].count('\n') + 1
+                    end_line = content[:end_pos].count('\n') + 1
+                    
+                    # Skip if line range is 0 (indicates a parsing issue)
+                    if start_line > 0 and end_line >= start_line:
+                        components.append((snippet[:500], start_line, end_line))
+    except Exception as e:
+        logger.debug(f"Nested element extraction failed: {e}")
     
     # FALLBACK 1: If no return blocks, try direct JSX/HTML extraction
     if not components:
@@ -143,8 +172,12 @@ def extract_react_components(file_path: str) -> list:
             for match in re.finditer(jsx_pattern, content):
                 snippet = match.group(0).strip()
                 if len(snippet) > 30 and snippet.count('<') == snippet.count('>'):
-                    start_line = content[:match.start()].count('\n') + 1
-                    end_line = content[:match.end()].count('\n') + 1
+                    # Get exact positions from the match
+                    start_pos = match.start()
+                    end_pos = match.end()
+                    
+                    start_line = content[:start_pos].count('\n') + 1
+                    end_line = content[:end_pos].count('\n') + 1
                     components.append((snippet[:2000], start_line, end_line))
         except Exception as e:
             logger.debug(f"Direct JSX extraction failed: {e}")
@@ -166,37 +199,62 @@ def extract_react_components(file_path: str) -> list:
                 full_component = content[match.start():brace_end + 1]
                 
                 # Find the first meaningful content (JSX or return statement)
-                content_start = full_component.find('<')
-                if content_start == -1:
-                    content_start = full_component.find('return')
+                jsx_start = full_component.find('<')
+                if jsx_start == -1:
+                    continue
                 
-                if content_start > 0:
-                    # Calculate actual positions in original content
-                    actual_content_start = match.start() + content_start
-                    snippet = full_component[content_start:].strip()[:2000]
-                    
-                    if len(snippet) > 30:
-                        start_line = content[:actual_content_start].count('\n') + 1
-                        end_line = content[:actual_content_start + len(snippet)].count('\n') + 1
-                        components.append((snippet, start_line, end_line))
+                # Find the matching closing tag
+                tag_in_component = full_component[jsx_start:]
+                tag_name_match = re.match(r'<([A-Za-z][A-Za-z0-9]*)', tag_in_component)
+                if not tag_name_match:
+                    continue
+                
+                tag_name = tag_name_match.group(1)
+                closing_pattern = f'</{tag_name}>'
+                closing_idx = tag_in_component.find(closing_pattern)
+                
+                if closing_idx == -1:
+                    continue
+                
+                closing_idx += len(closing_pattern)
+                
+                # Calculate positions in original content
+                actual_content_start = match.start() + jsx_start
+                actual_content_end = match.start() + jsx_start + closing_idx
+                
+                snippet = full_component[jsx_start:closing_idx].strip()
+                
+                if len(snippet) > 30:
+                    start_line = content[:actual_content_start].count('\n') + 1
+                    end_line = content[:actual_content_end].count('\n') + 1
+                    components.append((snippet[:2000], start_line, end_line))
         except Exception as e:
             logger.debug(f"Function content extraction failed: {e}")
     
-    # DEDUPLICATE while preserving order
+    # DEDUPLICATE while preserving order and filtering overly broad snippets
     try:
         seen = set()
         unique_components = []
+        
         for code, start, end in components:
             # Use code hash to avoid storing duplicate code snippets
             code_hash = hash(code[:100])
             if code_hash not in seen:
                 seen.add(code_hash)
-                unique_components.append((code, start, end))
+                
+                # Filter: Skip snippets that span more than 30 lines (too broad for bug location)
+                # UNLESS they're specifically targeted elements (h1-h6, buttons, etc.)
+                line_span = end - start + 1
+                is_specific_element = any(tag in code for tag in ['<h1', '<h2', '<h3', '<h4', '<h5', '<h6', '<button', '<input', '<label', '<form'])
+                
+                # Include if: line span is small (<=15 lines) OR it's a specific element
+                if line_span <= 15 or is_specific_element:
+                    unique_components.append((code, start, end))
         
-        return unique_components[:3]  # Max 3 components per file
+        return unique_components[:5]  # Max 5 components per file (more granular)
     except Exception as e:
         logger.error(f"Error during deduplication in {file_path}: {e}")
-        return components[:3]
+        return components[:5]
 
 
 def extract_css_rules(file_path: str) -> list:

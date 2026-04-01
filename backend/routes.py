@@ -127,14 +127,31 @@ def setup_routes(app, retriever, pytorch_available):
             print(f"\n✅ INDEXING COMPLETE")
             print(f"{'='*60}\n")
             
-            return {
+            # Extract unique file paths without line numbers
+            unique_files = sorted(list(set(
+                key.split(' (Lines')[0] for key in index_dict.keys()
+            )))
+            
+            print(f"📁 EXTRACTED FILES FOR API RESPONSE:")
+            print(f"   Total unique files: {len(unique_files)}")
+            for f in unique_files:
+                print(f"   ✓ {f}")
+            
+            response_data = {
                 "status": "success",
                 "message": f"Repository successfully indexed!",
                 "repository": repo_url,
                 "files_indexed": len(index_dict),
                 "snippets_indexed": total_snippets,
-                "timestamp": str(app_state.index_timestamp)
+                "files": unique_files,
+                "timestamp": str(datetime.now())
             }
+            
+            print(f"\n📤 API Response files array: {response_data['files']}")
+            print(f"   Type: {type(response_data['files'])}")
+            print(f"   Count: {len(response_data['files'])}")
+            
+            return response_data
             
         except Exception as e:
             print(f"❌ Indexing failed: {e}")

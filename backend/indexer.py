@@ -12,7 +12,8 @@ from extractors import extract_react_components, extract_css_rules
 def build_index_from_repo(repo_path: str) -> dict:
     """
     Traverse cloned repository and build index dictionary with line numbers.
-    Explicit file extension filtering for UI-relevant files.
+    Explicitly filters for UI-relevant file extensions to handle any repository structure.
+    Recursively searches all directories except ignored ones.
     
     Structure: { "file/path/Component.jsx (Lines 45-60)": ["component code 1", ...] }
     
@@ -21,6 +22,7 @@ def build_index_from_repo(repo_path: str) -> dict:
     - Extract React components and CSS rules
     - Track line numbers for all extractions
     - Format keys with line numbers: "path (Lines X-Y)"
+    - Work with any repository structure (recursively search all directories)
     
     Args:
         repo_path: Path to cloned repository
@@ -30,18 +32,12 @@ def build_index_from_repo(repo_path: str) -> dict:
     """
     index_dict = {}
     
-    logger.info("🔍 INDEXING REPOSITORY - Starting file traversal")
+    logger.info("🔍 INDEXING REPOSITORY - Starting recursive file traversal")
+    print(f"🔍 Recursively searching {repo_path} for UI files...")
     
-    # Phase 1: Search through defined directories
-    for search_dir in SEARCH_DIRECTORIES:
-        full_path = os.path.join(repo_path, search_dir)
-        if not os.path.exists(full_path):
-            continue
-        
-        logger.info(f"📂 Scanning directory: {search_dir}/")
-        print(f"📂 Scanning {search_dir}/")
-        
-        for root, dirs, files in os.walk(full_path):
+    # Recursively walk all directories from the repo root
+    try:
+        for root, dirs, files in os.walk(repo_path):
             # Skip irrelevant directories
             dirs[:] = [d for d in dirs if d not in IGNORE_DIRECTORIES]
             
@@ -50,6 +46,10 @@ def build_index_from_repo(repo_path: str) -> dict:
                 
                 # STRICT: Only process allowed extensions
                 if file_ext not in ALLOWED_EXTENSIONS:
+                    continue
+                
+                # Skip hidden files and common non-UI files
+                if file.startswith('.') or file in IGNORE_FILES:
                     continue
                 
                 file_path = os.path.join(root, file)
@@ -83,59 +83,12 @@ def build_index_from_repo(repo_path: str) -> dict:
                     logger.warning(f"  ⚠️  Error processing {file_path}: {e}")
                     print(f"  ⚠️  Could not process {file}: {str(e)[:100]}")
     
-    # Phase 2: Scan root directory for root-level UI files
-    logger.info("📂 Scanning root directory for root-level UI files...")
-    print(f"📂 Scanning root level for root UI files...")
-    
-    try:
-        for file in os.listdir(repo_path):
-            file_ext = Path(file).suffix.lower()
-            
-            # STRICT: Only allowed extensions
-            if file_ext not in ALLOWED_EXTENSIONS:
-                continue
-            
-            # Skip hidden files and common non-UI files
-            if file.startswith('.') or file in IGNORE_FILES:
-                continue
-            
-            file_path = os.path.join(repo_path, file)
-            
-            # Only process files, not directories
-            if not os.path.isfile(file_path):
-                continue
-            
-            try:
-                relative_path = file  # Root-level file, no "src/" prefix
-                
-                # Extract code snippets with line numbers
-                if file_ext == '.css':
-                    snippets_with_lines = extract_css_rules(file_path)
-                elif file_ext == '.html':
-                    snippets_with_lines = extract_react_components(file_path)
-                else:  # .jsx, .js, .tsx, .ts
-                    snippets_with_lines = extract_react_components(file_path)
-                
-                if snippets_with_lines:
-                    for code_snippet, start_line, end_line in snippets_with_lines:
-                        # FORMAT KEY with line numbers
-                        key = f"{relative_path} (Lines {start_line}-{end_line})"
-                        if key not in index_dict:
-                            index_dict[key] = []
-                        index_dict[key].append(code_snippet)
-                    
-                    logger.info(f"  ✓ {relative_path} ({len(snippets_with_lines)} snippet(s) extracted)")
-                    print(f"  ✓ {relative_path} ({len(snippets_with_lines)} snippet(s))")
-            
-            except Exception as e:
-                logger.warning(f"  ⚠️  Error processing root {file}: {e}")
-                print(f"  ⚠️  Could not process {file}: {str(e)[:100]}")
-    
     except Exception as e:
-        logger.error(f"Error scanning root directory: {e}")
-        print(f"⚠️  Error scanning root directory: {e}")
+        logger.error(f"Error during repository traversal: {e}")
+        print(f"⚠️  Error during repository traversal: {e}")
     
     logger.info(f"✅ INDEXING COMPLETE: {len(index_dict)} unique file/line combinations indexed")
+    print(f"✅ Indexing complete: {len(index_dict)} file snippets found")
     return index_dict
 
 
