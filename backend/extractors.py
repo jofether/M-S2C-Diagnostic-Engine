@@ -89,92 +89,98 @@ def extract_react_components(file_path: str) -> list:
     components = []
     lines = content.split('\n')
     
-    # IMPROVED APPROACH: Find function/component declarations and extract their bodies with proper brace counting
+    # STRATEGY: Extract the minimal code snippet that contains the actual bug/content
+    # NOT the entire function declaration and wrapper
     
-    # Pattern to find component declarations (function or const arrow function)
-    declaration_pattern = r'(?:export\s+)?(?:default\s+)?(?:function|const|var|let)\s+\w+\s*(?:\([^)]*\))?\s*(?:=>)?\s*(?:\()?'
-    
+    # Find all JSX/return blocks (the actual content, not the wrapper)
     try:
-        for match in re.finditer(declaration_pattern, content, re.MULTILINE):
-            # Find the opening brace after the declaration
-            brace_start = content.find('{', match.end())
-            if brace_start == -1:
+        # Look for "return" statements followed by JSX
+        return_pattern = r'return\s*\(\s*<'
+        for match in re.finditer(return_pattern, content, re.MULTILINE):
+            # Find the opening tag mark (<)
+            tag_start = content.find('<', match.end() - 1)
+            if tag_start == -1:
                 continue
             
-            # Use smart brace counting to find the matching closing brace
-            brace_end = _count_braces_smart(content, brace_start)
-            if brace_end == -1:
+            # Find the matching closing tag/paren
+            # Get the tag name
+            tag_name_match = re.match(r'<([A-Za-z][A-Za-z0-9]*)', content[tag_start:])
+            if not tag_name_match:
                 continue
             
-            # Extract code from declaration start to closing brace
-            component_code = content[match.start():brace_end + 1].strip()
+            tag_name = tag_name_match.group(1)
             
-            # Validate extracted code
-            if len(component_code) > 50 and any(
-                keyword in component_code 
-                for keyword in ['return', '<', 'jsx', 'function', 'const', 'export']
-            ):
-                # LINE NUMBER CALCULATION: count newlines before match
-                start_line = content[:match.start()].count('\n') + 1
-                end_line = content[:brace_end + 1].count('\n') + 1
-                
-                components.append((component_code[:2000], start_line, end_line))
+            # Find the closing tag
+            closing_pattern = f'</{tag_name}>|</{tag_name}'
+            closing_match = re.search(closing_pattern, content[tag_start:])
+            
+            if not closing_match:
+                # Look for self-closing or single tag
+                closing_pos = content.find('/>', tag_start)
+                if closing_pos == -1:
+                    closing_pos = content.find(')', content.find('>', tag_start))
+                if closing_pos == -1:
+                    continue
+            else:
+                closing_pos = tag_start + closing_match.end()
+            
+            # Extract just the JSX content
+            snippet = content[tag_start:closing_pos].strip()
+            
+            # Validate and store with correct line numbers
+            if len(snippet) > 20 and snippet.startswith('<'):
+                start_line = content[:tag_start].count('\n') + 1
+                end_line = content[:closing_pos].count('\n') + 1
+                components.append((snippet[:2000], start_line, end_line))
     except Exception as e:
-        logger.warning(f"⚠️  Error extracting components from {file_path}: {e}")
+        logger.debug(f"JSX return block extraction failed: {e}")
     
-    # FALLBACK 1: If no components found, try JSX block extraction
+    # FALLBACK 1: If no return blocks, try direct JSX/HTML extraction
     if not components:
         try:
-            jsx_pattern = r'<[A-Z]\w*(?:\s+[^>]*)?\s*>(?:[^<]|<(?!/))*?</[A-Z]\w*>'
-            match = re.search(jsx_pattern, content, re.MULTILINE | re.DOTALL)
-            if match:
-                code = match.group(0).strip()[:2000]
-                start_line = content[:match.start()].count('\n') + 1
-                end_line = content[:match.end()].count('\n') + 1
-                components.append((code, start_line, end_line))
+            # Match opening and closing JSX tags
+            jsx_pattern = r'<[A-Z]\w*[^>]*>[\s\S]*?</[A-Z]\w*>|<[a-z]+[^>]*>[\s\S]*?</[a-z]+>'
+            for match in re.finditer(jsx_pattern, content):
+                snippet = match.group(0).strip()
+                if len(snippet) > 30 and snippet.count('<') == snippet.count('>'):
+                    start_line = content[:match.start()].count('\n') + 1
+                    end_line = content[:match.end()].count('\n') + 1
+                    components.append((snippet[:2000], start_line, end_line))
         except Exception as e:
-            logger.debug(f"JSX fallback regex failed for {file_path}: {e}")
+            logger.debug(f"Direct JSX extraction failed: {e}")
     
-    # FALLBACK 2: Look for any substantial exported content
+    # FALLBACK 2: Function body content (but trim to actual content lines, not wrapper)
     if not components:
         try:
-            export_match = re.search(r'export\s+(default\s+)?(function|const|class|let|var)\s+(\w+).*', content, re.MULTILINE | re.DOTALL)
-            if export_match:
-                # Find opening brace and use smart counting
-                brace_pos = content.find('{', export_match.start())
-                if brace_pos != -1:
-                    brace_end = _count_braces_smart(content, brace_pos)
-                    if brace_end != -1:
-                        code = content[export_match.start():brace_end + 1].strip()[:2000]
-                        start_line = content[:export_match.start()].count('\n') + 1
-                        end_line = content[:brace_end + 1].count('\n') + 1
-                        components.append((code, start_line, end_line))
+            declaration_pattern = r'(?:export\s+)?(?:default\s+)?(?:function|const|var|let)\s+\w+\s*(?:\([^)]*\))?\s*(?:=>)?\s*(?:\()?'
+            for match in re.finditer(declaration_pattern, content, re.MULTILINE):
+                brace_start = content.find('{', match.end())
+                if brace_start == -1:
+                    continue
+                
+                brace_end = _count_braces_smart(content, brace_start)
+                if brace_end == -1:
+                    continue
+                
+                # Extract full component for validation
+                full_component = content[match.start():brace_end + 1]
+                
+                # Find the first meaningful content (JSX or return statement)
+                content_start = full_component.find('<')
+                if content_start == -1:
+                    content_start = full_component.find('return')
+                
+                if content_start > 0:
+                    # Calculate actual positions in original content
+                    actual_content_start = match.start() + content_start
+                    snippet = full_component[content_start:].strip()[:2000]
+                    
+                    if len(snippet) > 30:
+                        start_line = content[:actual_content_start].count('\n') + 1
+                        end_line = content[:actual_content_start + len(snippet)].count('\n') + 1
+                        components.append((snippet, start_line, end_line))
         except Exception as e:
-            logger.debug(f"Export fallback failed for {file_path}: {e}")
-    
-    # FALLBACK 3: Last resort - entire file if it looks like a component
-    # BUT: Only if we can identify actual component structure
-    if not components and any(kw in content for kw in ['return', 'useState', 'useEffect', 'React', '<', '>']):
-        try:
-            # Find first declaration line and last closing brace
-            first_decl = re.search(r'(export\s+)?(default\s+)?(function|const|var|let|class)\s+\w+', content)
-            if first_decl:
-                # Find last closing brace that matches
-                last_brace_pos = content.rfind('}')
-                if last_brace_pos > first_decl.start():
-                    # Verify this is a matching brace
-                    brace_start = content.find('{', first_decl.end())
-                    if brace_start != -1:
-                        actual_end = _count_braces_smart(content, brace_start)
-                        if actual_end != -1:
-                            code = content[first_decl.start():actual_end + 1].strip()[:2000]
-                            start_line = content[:first_decl.start()].count('\n') + 1
-                            end_line = content[:actual_end + 1].count('\n') + 1
-                            # Only add if it's a reasonable-sized component (not entire file)
-                            if end_line - start_line < len(lines):  # Not the entire file
-                                components.append((code, start_line, end_line))
-        except Exception as e:
-            logger.debug(f"File content fallback failed for {file_path}: {e}")
+            logger.debug(f"Function content extraction failed: {e}")
     
     # DEDUPLICATE while preserving order
     try:

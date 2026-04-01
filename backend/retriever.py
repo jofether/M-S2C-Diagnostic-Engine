@@ -68,28 +68,48 @@ class MS2CRetriever:
                 styling_bonus = sum(10 for word in query_words if word in css_keywords and word in snippet_lower)
                 
                 # Component-specific bonus for contextual features
-                # If query mentions "hero" or "banner" and file is *Hero, give big bonus
                 semantic_bonus = 0
-                if any(word in query_lower for word in ['hero', 'banner', 'recipe']):
-                    if 'hero' in file_name_lower:
-                        semantic_bonus += 50
-                    if 'recipe' in file_name_lower:
-                        semantic_bonus += 20
                 
-                # Search/input field related bonus
-                if any(word in query_lower for word in ['search', 'input', 'type', 'field', 'query', 'text', 'enter']):
-                    if 'app' in file_name_lower or 'main' in file_name_lower or 'index' in file_name_lower:
-                        semantic_bonus += 40  # These are likely root-level files
-                    if any(term in snippet_lower for term in ['search', 'input', 'type', 'query', 'placeholder']):
+                # BANNER/HERO/RECIPE: High-priority component names
+                if 'banner' in query_lower:
+                    if 'banner' in file_name_lower:
+                        semantic_bonus += 60  # Strong match for banner queries
+                if 'hero' in query_lower:
+                    if 'hero' in file_name_lower:
+                        semantic_bonus += 60
+                if 'recipe' in query_lower:
+                    if 'recipe' in file_name_lower:
+                        semantic_bonus += 50
+                
+                # CARD-related bonus: "card" in query should boost card components
+                if 'card' in query_lower:
+                    if 'card' in file_name_lower:
+                        semantic_bonus += 50
+                    # Also boost PlantGrid if about card layout/styling
+                    if 'grid' in file_name_lower and any(kw in query_lower for kw in ['spacing', 'spacing', 'cramped', 'layout', 'arrange']):
                         semantic_bonus += 30
                 
+                # Search/input field related bonus - ONLY if actual UI component terms in code
+                if any(word in query_lower for word in ['search', 'input', 'field', 'query']):
+                    if any(term in snippet_lower for term in ['search', 'input', 'type', 'query', 'placeholder', 'onChange']):
+                        semantic_bonus += 40
+                    # Don't penalize non-search components
+                
                 # Give bonus for UI component terms appearing in both query and filename
-                ui_terms = {'badge', 'difficulty', 'level', 'rating', 'card', 'display', 'show', 'render'}
+                ui_terms = {'badge', 'difficulty', 'level', 'rating', 'grid', 'banner', 'sidebar', 'special', 'guide', 'sustainability'}
                 for term in ui_terms:
                     if term in query_lower and term in file_name_lower:
-                        semantic_bonus += 30  # Strong bonus for semantic match
+                        semantic_bonus += 35  # Strong bonus for semantic match
                     elif term in query_lower and term in snippet_lower:
-                        semantic_bonus += 5
+                        semantic_bonus += 10
+                
+                # PENALTY: Reduce score for root-level files that aren't actually relevant
+                # If file is App.jsx or index.jsx but doesn't contain component-specific content
+                if file_name_lower in ('app.jsx', 'index.jsx', 'main.jsx'):
+                    # Root files should only score high if they contain actual matches
+                    if snippet_matches == 0 and file_name_matches == 0:
+                        # No real content matches in root files - reduce bonus
+                        semantic_bonus = max(0, semantic_bonus - 30)
                 
                 score = snippet_matches + (file_name_matches * 10) + styling_bonus + semantic_bonus
                 
