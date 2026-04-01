@@ -7,7 +7,23 @@ import json
 import subprocess
 import tempfile
 import re
+import logging
 from pathlib import Path
+
+# Setup logging to both console and file
+log_file = "backend_debug.log"
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_file),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# Print log file location to console
+print(f"\n📝 Logging to: {os.path.abspath(log_file)}\n")
 
 # Try to import the custom AI Retriever, fall back to mock if PyTorch issues
 try:
@@ -426,10 +442,17 @@ async def index_repository(repo_url: str = Form(...)):
         print(f"   Files: {len(index_dict)}")
         print(f"   Total Snippets: {total_snippets}")
         print(f"\n📋 Files indexed:")
+        
+        # Log to file as well
+        logger.info(f"\n📊 INDEX BUILT: Files: {len(index_dict)}, Snippets: {total_snippets}")
+        logger.info("📋 Files indexed:")
+        
         for file_path in sorted(index_dict.keys())[:10]:
             print(f"   ✓ {file_path}")
+            logger.info(f"   ✓ {file_path}")
         if len(index_dict) > 10:
             print(f"   ... and {len(index_dict) - 10} more files")
+            logger.info(f"   ... and {len(index_dict) - 10} more files")
         
         # Step 4: Update global indexed data and re-encode through retriever
         global global_indexed_data
@@ -517,6 +540,15 @@ async def diagnose_bug(bug_description: str = Form(...), screenshot: UploadFile 
         print(f"💾 Global indexed data has {len(global_indexed_data)} files")
         print(f"🧠 Retriever has {len(retriever.unique_files)} files")
         
+        # Log to file
+        logger.info(f"\n🔍 DIAGNOSING BUG")
+        logger.info(f"📝 Query: {bug_description[:80]}...")
+        logger.info(f"🖼️  Visual: {screenshot.filename}")
+        logger.info(f"📦 Repository: {app_state.indexed_repo_url}")
+        logger.info(f"📊 Indexed: {app_state.file_count} files, {app_state.snippet_count} snippets")
+        logger.info(f"💾 Global indexed data has {len(global_indexed_data)} files")
+        logger.info(f"🧠 Retriever has {len(retriever.unique_files)} files")
+        
         results = []
         
         # Check if we have actual indexed data (not default dummy)
@@ -531,6 +563,13 @@ async def diagnose_bug(bug_description: str = Form(...), screenshot: UploadFile 
         print(f"   is_real_index: {is_real_index}")
         if len(global_indexed_data) <= 5:
             print(f"   Files in global_indexed_data: {list(global_indexed_data.keys())}")
+        
+        logger.info(f"\n🔍 INDEX CHECK:")
+        logger.info(f"   app_state.is_indexed: {app_state.is_indexed}")
+        logger.info(f"   len(global_indexed_data): {len(global_indexed_data)}")
+        logger.info(f"   is_real_index: {is_real_index}")
+        if len(global_indexed_data) <= 5:
+            logger.info(f"   Files in global_indexed_data: {list(global_indexed_data.keys())}")
         
         if not app_state.is_indexed:
             print(f"⚠️  No repository indexed yet - using keyword fallback")
