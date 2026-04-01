@@ -216,13 +216,13 @@ def clone_repository(repo_url: str, destination: str) -> bool:
 def extract_react_components(file_path: str) -> list:
     """
     Extract React components from a JavaScript/JSX file using regex.
-    More aggressive pattern matching to catch all component types.
+    Returns tuples of (code, start_line, end_line) to preserve line numbers.
     
     Args:
         file_path: Path to the .jsx/.js/.tsx file
         
     Returns:
-        List of extracted component code strings
+        List of tuples: [(code_string, start_line, end_line), ...]
     """
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -235,6 +235,9 @@ def extract_react_components(file_path: str) -> list:
         return []
     
     components = []
+    
+    # Split content into lines for line number calculation
+    lines = content.split('\n')
     
     # Pattern 1: export function Component() or export default function Component()
     pattern1 = r'export\s+(?:default\s+)?function\s+\w+\s*\([^)]*\)\s*\{(?:[^{}]|{[^}]*})*\}'
@@ -253,9 +256,14 @@ def extract_react_components(file_path: str) -> list:
     for pattern in patterns:
         for match in re.finditer(pattern, content, re.MULTILINE | re.DOTALL):
             component_code = match.group(0).strip()
+            
             # Only add if it's reasonable length and contains JSX markers or function definition
             if len(component_code) > 50 and ('return' in component_code or 'jsx' in component_code.lower() or '<' in component_code):
-                components.append(component_code[:2000])
+                # Calculate line number by counting newlines before match start
+                start_line = content[:match.start()].count('\n') + 1
+                end_line = content[:match.end()].count('\n') + 1
+                
+                components.append((component_code[:2000], start_line, end_line))
     
     # If nothing found with patterns, extract any return statement with JSX
     if not components:
@@ -263,19 +271,21 @@ def extract_react_components(file_path: str) -> list:
         for match in re.finditer(jsx_pattern, content, re.MULTILINE | re.DOTALL):
             code = match.group(0).strip()
             if len(code) > 40:
-                components.append(code[:1500])
+                start_line = content[:match.start()].count('\n') + 1
+                end_line = content[:match.end()].count('\n') + 1
+                components.append((code[:1500], start_line, end_line))
     
     # Fallback: if still nothing, return the first 1500 chars if file looks like a component
     if not components and any(keyword in content for keyword in ['return', 'useState', 'useEffect', 'React', 'jsx']):
-        components.append(content[:1500])
+        components.append((content[:1500], 1, len(lines)))
     
     # Remove duplicates while preserving order
     seen = set()
     unique_components = []
-    for comp in components:
-        if comp not in seen:
-            seen.add(comp)
-            unique_components.append(comp)
+    for code, start, end in components:
+        if code not in seen:
+            seen.add(code)
+            unique_components.append((code, start, end))
     
     return unique_components[:3]  # Return max 3 per file
 
@@ -283,12 +293,13 @@ def extract_react_components(file_path: str) -> list:
 def extract_css_rules(file_path: str) -> list:
     """
     Extract CSS rules from .css files.
+    Returns tuples of (code, start_line, end_line) to preserve line numbers.
     
     Args:
         file_path: Path to the .css file
         
     Returns:
-        List of extracted CSS rule blocks
+        List of tuples: [(rule_string, start_line, end_line), ...]
     """
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -305,25 +316,28 @@ def extract_css_rules(file_path: str) -> list:
     for match in re.finditer(css_pattern, content, re.MULTILINE | re.DOTALL):
         rule = match.group(0)
         if len(rule) > 20:  # Skip very short rules
-            rules.append(rule[:1000])
+            start_line = content[:match.start()].count('\n') + 1
+            end_line = content[:match.end()].count('\n') + 1
+            rules.append((rule[:1000], start_line, end_line))
     
     # If no rules found, return the file content
     if not rules and len(content.strip()) > 50:
-        rules.append(content[:1500])
+        lines = content.split('\n')
+        rules.append((content[:1500], 1, len(lines)))
     
     return rules
 
 
 def build_index_from_repo(repo_path: str) -> dict:
     """
-    Traverse cloned repository and build index dictionary.
-    Structure: { "file/path/Component.jsx": ["component code 1", "component code 2"] }
+    Traverse cloned repository and build index dictionary with line numbers.
+    Structure: { "file/path/Component.jsx (Lines 45-60)": ["component code 1", ...] }
     
     Args:
         repo_path: Path to cloned repository
         
     Returns:
-        Dictionary mapping file paths to lists of code snippets
+        Dictionary mapping file paths with line numbers to lists of code snippets
     """
     index_dict = {}
     
@@ -349,15 +363,21 @@ def build_index_from_repo(repo_path: str) -> dict:
                 file_path = os.path.join(root, file)
                 relative_path = os.path.relpath(file_path, repo_path)
                 
-                # Extract code snippets
+                # Extract code snippets with line numbers
                 if file_ext == '.css':
-                    snippets = extract_css_rules(file_path)
+                    snippets_with_lines = extract_css_rules(file_path)
                 else:  # .jsx, .js, .tsx, .ts
-                    snippets = extract_react_components(file_path)
+                    snippets_with_lines = extract_react_components(file_path)
                 
-                if snippets:
-                    index_dict[relative_path] = snippets
-                    print(f"  ✓ {relative_path} ({len(snippets)} snippets)")
+                if snippets_with_lines:
+                    # Create entries with line numbers in the key
+                    for code_snippet, start_line, end_line in snippets_with_lines:
+                        key = f"{relative_path} (Lines {start_line}-{end_line})"
+                        if key not in index_dict:
+                            index_dict[key] = []
+                        index_dict[key].append(code_snippet)
+                    
+                    print(f"  ✓ {relative_path} ({len(snippets_with_lines)} snippets with line numbers)")
     
     return index_dict
 
@@ -612,16 +632,13 @@ async def diagnose_bug(bug_description: str = Form(...), screenshot: UploadFile 
                     scope="file"
                 )
                 
-                # Format results from retriever
+                # Format results from retriever in format frontend expects: [[filepath_with_lines, code], ...]
                 for idx, (file_path, snippet) in enumerate(top_results):
-                    confidence = 0.95 - (idx * 0.05)
-                    
-                    results.append({
-                        "file": file_path,
-                        "lines": f"indexed-{idx+1}",
-                        "code": snippet[:500].strip(),
-                        "confidence": confidence
-                    })
+                    # file_path already contains line numbers in format "path/file.jsx (Lines X-Y)"
+                    results.append([
+                        file_path,  # First element: filepath with line numbers
+                        snippet[:500].strip()  # Second element: code snippet
+                    ])
                 
                 print(f"✅ Retrieved {len(results)} results from repository")
                 
