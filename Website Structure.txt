@@ -1,0 +1,45 @@
+================================================================================
+M-S2C INTERACTIVE DIAGNOSTIC INTERFACE (WEBSITE STRUCTURE)
+================================================================================
+Tech Stack Context: React (Frontend), Vite (Bundler), Tailwind CSS (Styling)
+
+I. THE INITIAL STATE: REPOSITORY INGESTION
+--------------------------------------------------------------------------------
+Purpose: Establish the search corpus and trigger the offline indexing workflow.
+* Repository Input Component: A clean, centered form with a single text input 
+  field requesting the target GitHub Repository URL.
+* Submission Action: A primary button (e.g., "Index Repository") to send the URL 
+  to the FastAPI backend.
+
+II. THE LOADING STATE: CODEBASE INDEXING
+--------------------------------------------------------------------------------
+Purpose: Keep the user informed during the computationally heavy preprocessing phase.
+* Progress Indicator: A dynamic loading spinner or progress bar.
+* Status Messages: Text updates indicating the backend operations (e.g., 
+  "Parsing ASTs with Tree-sitter...", "Generating CodeBERT Embeddings...", 
+  "Populating FAISS Vector Database...").
+
+III. THE QUERY STATE: MULTIMODAL BUG REPORT FORM
+--------------------------------------------------------------------------------
+Purpose: Accept the dual-stream diagnostic query from the user.
+* Natural Language Input: A prominent text area for the user to describe the 
+  bug's symptoms.
+* Visual Evidence Upload: A drag-and-drop zone or file upload button specifically 
+  designed to accept User Interface (UI) screenshots.
+* Diagnostic Trigger: A "Diagnose Bug" submit button that packages the text and 
+  image payload and fires the inference request to the backend.
+
+IV. THE OUTPUT STATE: DIAGNOSTIC RESULTS DASHBOARD
+--------------------------------------------------------------------------------
+Purpose: Function strictly as a Decision Support System (DSS) by rendering the 
+ranked list of candidate AST nodes.
+* Result Card Component: For each retrieved AST node, render a card containing 
+  the following mandatory sections:
+    1. Code Preview: A syntax-highlighted block displaying the specific code 
+       snippet of the candidate AST node for immediate visual inspection.
+    2. Contextual Metadata: A distinct header or footer explicitly listing the 
+       specific file path and the exact line numbers where the node is located.
+    3. Modality Contribution Meter: A dynamic visual gauge (like a horizontal 
+       stacked bar chart) representing the gating weight (α). This shows exactly 
+       how much the Adaptive Gating Network relied on the Text vs. the Image 
+       to generate this specific rank.
