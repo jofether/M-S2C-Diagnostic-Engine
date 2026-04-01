@@ -16,7 +16,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(log_file),
+        logging.FileHandler(log_file, encoding='utf-8'),  # UTF-8 for file
         logging.StreamHandler()
     ]
 )
@@ -159,24 +159,45 @@ app_state = AppState()
 def clone_repository(repo_url: str, destination: str) -> bool:
     """
     Shallow clone a GitHub repository to save time and bandwidth.
+    Automatically extracts branch name from GitHub web URLs and clones that branch.
     
     Args:
-        repo_url: Full GitHub URL (e.g., https://github.com/user/repo)
+        repo_url: GitHub URL - can be:
+                  - Base: https://github.com/user/repo
+                  - With branch: https://github.com/user/repo/tree/buggy
         destination: Local path where repo will be cloned
         
     Returns:
         True if successful, False otherwise
     """
+    branch_name = None
+    
+    # Extract branch name from GitHub web URL
+    if '/tree/' in repo_url:
+        parts = repo_url.split('/tree/')
+        repo_url = parts[0]  # Base repository URL
+        branch_name = parts[1].rstrip('/')  # Branch name
+        print(f"📌 Branch specified: {branch_name}")
+    
     try:
         print(f"🔄 Cloning repository: {repo_url}")
+        
+        # Build clone command with optional branch
+        clone_cmd = ["git", "clone", "--depth", "1"]
+        if branch_name:
+            clone_cmd.extend(["--branch", branch_name])
+        clone_cmd.extend([repo_url, destination])
+        
         result = subprocess.run(
-            ["git", "clone", "--depth", "1", repo_url, destination],
+            clone_cmd,
             capture_output=True,
             text=True,
             timeout=60
         )
         if result.returncode == 0:
             print(f"✅ Repository cloned to: {destination}")
+            if branch_name:
+                print(f"✅ Using branch: {branch_name}")
             return True
         else:
             print(f"❌ Clone failed: {result.stderr}")
