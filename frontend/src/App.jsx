@@ -451,7 +451,7 @@ function QueryState({
       darkMode ? 'bg-slate-900' : 'bg-white'
     }`}>
       {/* Header */}
-      <div className={`border-b ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'} px-4 py-2 flex items-center justify-between relative`}>
+      <div className={`border-b ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'} px-4 py-2 flex items-center justify-between`}>
         <div className="min-w-0">
           <h1 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
             M-S2C Diagnostic Engine
@@ -464,7 +464,7 @@ function QueryState({
         </div>
         
         {/* Buttons Wrapper */}
-        <div className={`absolute top-4 right-4 flex items-center gap-2 z-40 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+        <div className={`flex items-center gap-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
           {/* Dark Mode Toggle */}
           <button
             onClick={() => setDarkMode(!darkMode)}
@@ -735,13 +735,13 @@ function ResultsState({ onBackToQuery, darkMode, setDarkMode, results = [], alph
       darkMode ? 'bg-slate-900' : 'bg-white'
     }`}>
       {/* Header */}
-      <div className={`border-b ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'} px-4 py-2 flex items-center justify-between relative`}>
+      <div className={`border-b ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'} px-4 py-2 flex items-center justify-between`}>
         <h1 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
           Analysis Results
         </h1>
         
         {/* Buttons Wrapper */}
-        <div className={`absolute top-4 right-4 flex items-center gap-2 z-40 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+        <div className={`flex items-center gap-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
           {/* Dark Mode Toggle */}
           <button
             onClick={() => setDarkMode(!darkMode)}
