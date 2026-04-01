@@ -699,7 +699,7 @@ function QueryState({
                 disabled={!bugDescription.trim() || !uploadedFile}
                 className={`w-full font-medium py-2 rounded-lg text-sm transition-all ${
                   !bugDescription.trim() || !uploadedFile
-                    ? 'opacity-50 cursor-not-allowed'
+                    ? 'bg-indigo-600 text-white opacity-50 cursor-not-allowed'
                     : darkMode
                       ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                       : 'bg-indigo-600 hover:bg-indigo-700 text-white'
