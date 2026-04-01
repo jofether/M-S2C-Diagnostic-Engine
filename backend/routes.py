@@ -254,14 +254,26 @@ def setup_routes(app, retriever, pytorch_available):
                         scope="file"
                     )
                     
-                    # Format results from retriever in format frontend expects: [[filepath_with_lines, code], ...]
+                    # Format results from retriever to match frontend expectations
                     logger.info(f"📤 RETRIEVER RETURNED {len(top_results)} results")
+                    results = []
                     for idx, (file_path, snippet) in enumerate(top_results):
-                        # file_path already contains line numbers in format "path/file.jsx (Lines X-Y)"
-                        formatted_result = [
-                            file_path,  # First element: filepath with line numbers
-                            snippet[:500].strip()  # Second element: code snippet
-                        ]
+                        # Extract filename and line numbers from file_path like "path/file.jsx (Lines X-Y)"
+                        import re
+                        line_match = re.search(r'\(Lines\s+(\d+)-(\d+)\)', file_path)
+                        lines = f"{line_match.group(1)}-{line_match.group(2)}" if line_match else "?"
+                        
+                        # Extract just the filename
+                        file_name = file_path.split('/')[-1].split(' ')[0]
+                        
+                        formatted_result = {
+                            "name": file_name,
+                            "file": file_path,
+                            "lines": lines,
+                            "code": snippet[:500].strip(),
+                            "explanation": f"Found in {file_name} - relevant code snippet",
+                            "confidence": 0.85 + (idx * 0.05)  # Decrease confidence for lower-ranked results
+                        }
                         results.append(formatted_result)
                         logger.info(f"   Result {idx+1}: {file_path}")
                         logger.info(f"   Code preview: {snippet[:100]}...")
@@ -324,8 +336,7 @@ def setup_routes(app, retriever, pytorch_available):
             "pytorch_available": pytorch_available,
             "mode": "production" if pytorch_available else "mock",
             "repository_indexed": app_state.is_indexed,
-            "indexed_repository": app_state.indexed_repo_url,
-            "index_timestamp": str(app_state.index_timestamp) if app_state.index_timestamp else None
+            "indexed_repository": app_state.indexed_repo_url
         }
     
     

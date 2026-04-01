@@ -991,8 +991,25 @@ function QueryState({
                                         <p className={`font-semibold mb-2 flex items-center gap-2 ${
                                           darkMode ? 'text-slate-200' : 'text-slate-900'
                                         }`}>
-                                          <span>🎯</span> {candidate.name || 'Unknown'}
+                                          <span>📄</span> {candidate.name || candidate.file || 'Unknown'}
                                         </p>
+                                        {(candidate.file || candidate.lines) && (
+                                          <p className={`text-xs mb-2 ${
+                                            darkMode ? 'text-slate-500' : 'text-slate-600'
+                                          }`}>
+                                            {candidate.file && <span>{candidate.file}</span>}
+                                            {candidate.lines && <span> (Lines {candidate.lines})</span>}
+                                          </p>
+                                        )}
+                                        {candidate.code && (
+                                          <pre className={`text-xs mb-2 p-2 rounded overflow-auto max-h-24 break-words ${
+                                            darkMode
+                                              ? 'bg-slate-700/50 border border-slate-600 text-slate-300'
+                                              : 'bg-slate-100 border border-slate-300 text-slate-700'
+                                          }`}>
+                                            {candidate.code}
+                                          </pre>
+                                        )}
                                         {candidate.explanation && (
                                           <p className={`text-xs break-words ${
                                             darkMode ? 'text-slate-400' : 'text-slate-600'
@@ -1001,8 +1018,8 @@ function QueryState({
                                           </p>
                                         )}
                                         {candidate.confidence && (
-                                          <p className={`text-xs mt-2 ${
-                                            darkMode ? 'text-slate-500' : 'text-slate-500'
+                                          <p className={`text-xs mt-2 font-semibold ${
+                                            darkMode ? 'text-indigo-300' : 'text-indigo-600'
                                           }`}>
                                             Confidence: {Math.round(candidate.confidence * 100)}%
                                           </p>
