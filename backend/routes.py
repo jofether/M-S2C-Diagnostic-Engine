@@ -3,6 +3,7 @@ API routes for the M-S2C Diagnostic Engine
 """
 
 import os
+import sys
 import json
 import shutil
 import tempfile
@@ -150,6 +151,8 @@ def setup_routes(app, retriever, pytorch_available):
             print(f"\n📤 API Response files array: {response_data['files']}")
             print(f"   Type: {type(response_data['files'])}")
             print(f"   Count: {len(response_data['files'])}")
+            print(f"\n✅ ABOUT TO RETURN RESPONSE TO CLIENT")
+            print(f"{'='*60}\n")
             
             return response_data
             
@@ -157,12 +160,14 @@ def setup_routes(app, retriever, pytorch_available):
             print(f"❌ Indexing failed: {e}")
             import traceback
             traceback.print_exc()
-            return {
+            error_response = {
                 "status": "error",
                 "message": f"Indexing error: {str(e)}",
                 "files_indexed": 0,
                 "snippets_indexed": 0
             }
+            print(f"❌ RETURNING ERROR RESPONSE: {error_response}")
+            return error_response
         
         finally:
             # Step 6: Cleanup temp directory
