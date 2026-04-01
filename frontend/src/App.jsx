@@ -696,9 +696,9 @@ function QueryState({
               {/* Analyze Button */}
               <button
                 onClick={onDiagnoseBug}
-                disabled={!bugDescription.trim() || !uploadedFile}
+                disabled={!bugDescription.trim()}
                 className={`w-full font-medium py-2 rounded-lg text-sm transition-all ${
-                  !bugDescription.trim() || !uploadedFile
+                  !bugDescription.trim()
                     ? 'bg-indigo-600 text-white opacity-50 cursor-not-allowed'
                     : darkMode
                       ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
