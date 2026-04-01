@@ -919,6 +919,7 @@ async def health_check():
     }
 
 @app.post("/api/reset")
+@app.get("/api/reset")
 async def reset_state():
     """Reset the application state"""
     app_state.reset()
