@@ -503,8 +503,8 @@ function QueryState({
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-3 pt-4">
-        <div className="text-center max-w-sm mx-auto">
+      <div className="flex-1 overflow-y-auto p-3 pt-4 flex items-center justify-center">
+        <div className="text-center max-w-sm mx-auto w-full">
           {!repositoryIndexed ? (
             <>
               <div className="text-4xl mb-2">🔗</div>
@@ -513,11 +513,52 @@ function QueryState({
               }`}>
                 Index a Repository
               </h2>
-              <p className={`text-sm ${
+              <p className={`text-sm mb-6 ${
                 darkMode ? 'text-slate-400' : 'text-slate-600'
               }`}>
                 Enter a GitHub URL to get started
               </p>
+              
+              {/* Form moved here */}
+              <div className="space-y-2">
+                <div>
+                  <div className={`flex items-center gap-2 text-xs font-semibold mb-1 ${
+                    darkMode ? 'text-slate-300' : 'text-slate-700'
+                  }`}>
+                    <span>GitHub Repository URL <span className="text-red-500">*</span></span>
+                  </div>
+                  <input
+                    type="text"
+                    value={repositoryUrl}
+                    onChange={(e) => setRepositoryUrl(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        onIndexRepository()
+                      }
+                    }}
+                    placeholder="e.g., https://github.com/user/repo"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent text-sm transition-colors ${
+                      darkMode
+                        ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500'
+                        : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                    }`}
+                  />
+                </div>
+
+                <button
+                  onClick={onIndexRepository}
+                  disabled={!repositoryUrl.trim()}
+                  className={`w-full font-medium py-2 rounded-lg text-sm transition-all ${
+                    !repositoryUrl.trim()
+                      ? 'bg-indigo-600 text-white opacity-50 cursor-not-allowed'
+                      : darkMode
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  }`}
+                >
+                  Index Repository
+                </button>
+              </div>
             </>
           ) : (
             <>
@@ -537,74 +578,31 @@ function QueryState({
         </div>
       </div>
 
-      {/* Input Area (Sticky at bottom) */}
+      {/* Input Area (Sticky at bottom) - Only for bug reporting */}
+      {repositoryIndexed && (
       <div className={`border-t ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200'} p-3`}>
         <div className="max-w-3xl mx-auto space-y-2">
-          {!repositoryIndexed ? (
-            // Repository Indexing Form
-            <>
-              <div>
-                <div className={`flex items-center gap-2 text-xs font-semibold mb-1 ${
-                  darkMode ? 'text-slate-300' : 'text-slate-700'
-                }`}>
-                  <span>GitHub Repository URL <span className="text-red-500">*</span></span>
-                </div>
-                <input
-                  type="text"
-                  value={repositoryUrl}
-                  onChange={(e) => setRepositoryUrl(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      onIndexRepository()
-                    }
-                  }}
-                  placeholder="e.g., https://github.com/user/repo"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent text-sm transition-colors ${
-                    darkMode
-                      ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500'
-                      : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
-                  }`}
-                />
-              </div>
+          <div>
+            <div className={`flex items-center gap-2 text-xs font-semibold mb-1 ${
+              darkMode ? 'text-slate-300' : 'text-slate-700'
+            }`}>
+              <span>Bug Description <span className="text-red-500">*</span></span>
+            </div>
+            <textarea
+              value={bugDescription}
+              onChange={(e) => setBugDescription(e.target.value)}
+              placeholder="What's the bug? (e.g., 'Button doesn't respond to clicks on mobile')"
+              rows="2"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent resize-none text-sm transition-colors ${
+                darkMode
+                  ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500'
+                  : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+              }`}
+            />
+          </div>
 
-              <button
-                onClick={onIndexRepository}
-                disabled={!repositoryUrl.trim()}
-                className={`w-full font-medium py-2 rounded-lg text-sm transition-all ${
-                  !repositoryUrl.trim()
-                    ? 'bg-indigo-600 text-white opacity-50 cursor-not-allowed'
-                    : darkMode
-                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                }`}
-              >
-                Index Repository
-              </button>
-            </>
-          ) : (
-            // Bug Description Form
-            <>
-              <div>
-                <div className={`flex items-center gap-2 text-xs font-semibold mb-1 ${
-                  darkMode ? 'text-slate-300' : 'text-slate-700'
-                }`}>
-                  <span>Bug Description <span className="text-red-500">*</span></span>
-                </div>
-                <textarea
-                  value={bugDescription}
-                  onChange={(e) => setBugDescription(e.target.value)}
-                  placeholder="What's the bug? (e.g., 'Button doesn't respond to clicks on mobile')"
-                  rows="2"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent resize-none text-sm transition-colors ${
-                    darkMode
-                      ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500'
-                      : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
-                  }`}
-                />
-              </div>
-
-              {/* File dropdown + Image Upload (side by side) */}
-              <div className="grid grid-cols-2 gap-2">
+          {/* File dropdown + Image Upload (side by side) */}
+          <div className="grid grid-cols-2 gap-2">
                 {/* File Hint Dropdown */}
                 <div>
                   <div className={`text-xs font-semibold mb-1 ${
@@ -691,26 +689,25 @@ function QueryState({
                     )}
                   </div>
                 </div>
-              </div>
+            </div>
 
-              {/* Analyze Button */}
-              <button
-                onClick={onDiagnoseBug}
-                disabled={!bugDescription.trim()}
-                className={`w-full font-medium py-2 rounded-lg text-sm transition-all ${
-                  !bugDescription.trim()
-                    ? 'bg-indigo-600 text-white opacity-50 cursor-not-allowed'
-                    : darkMode
-                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                }`}
-              >
-                Analyze Bug
-              </button>
-            </>
-          )}
+          {/* Analyze Button */}
+          <button
+            onClick={onDiagnoseBug}
+            disabled={!bugDescription.trim()}
+            className={`w-full font-medium py-2 rounded-lg text-sm transition-all ${
+              !bugDescription.trim()
+                ? 'bg-indigo-600 text-white opacity-50 cursor-not-allowed'
+                : darkMode
+                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+            }`}
+          >
+            Analyze Bug
+          </button>
         </div>
       </div>
+      )}
     </div>
   )
 }
