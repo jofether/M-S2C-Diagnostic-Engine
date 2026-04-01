@@ -349,10 +349,10 @@ function InitialState({ repositoryUrl, setRepositoryUrl, onIndexRepository, dark
           <button
             onClick={onIndexRepository}
             disabled={!repositoryUrl.trim()}
-            className={`w-full font-semibold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
-              darkMode
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white'
-                : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white'
+            className={`w-full py-2 rounded-lg font-medium transition-all ${
+              !repositoryUrl.trim() 
+                ? 'bg-indigo-600 text-white opacity-50 cursor-not-allowed' 
+                : 'bg-indigo-600 text-white hover:bg-indigo-700'
             }`}
           >
             Index Repository
@@ -572,7 +572,7 @@ function QueryState({
                 disabled={!repositoryUrl.trim()}
                 className={`w-full font-medium py-2 rounded-lg text-sm transition-all ${
                   !repositoryUrl.trim()
-                    ? 'opacity-50 cursor-not-allowed'
+                    ? 'bg-indigo-600 text-white opacity-50 cursor-not-allowed'
                     : darkMode
                       ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                       : 'bg-indigo-600 hover:bg-indigo-700 text-white'
