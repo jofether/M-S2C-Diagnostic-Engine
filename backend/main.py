@@ -525,6 +525,13 @@ async def diagnose_bug(bug_description: str = Form(...), screenshot: UploadFile 
             not all(f in global_indexed_data for f in ["src/components/Login.jsx", "src/layouts/Container.jsx", "src/styles/forms.css"])
         )
         
+        print(f"\n🔍 INDEX CHECK:")
+        print(f"   app_state.is_indexed: {app_state.is_indexed}")
+        print(f"   len(global_indexed_data): {len(global_indexed_data)}")
+        print(f"   is_real_index: {is_real_index}")
+        if len(global_indexed_data) <= 5:
+            print(f"   Files in global_indexed_data: {list(global_indexed_data.keys())}")
+        
         if not app_state.is_indexed:
             print(f"⚠️  No repository indexed yet - using keyword fallback")
             results = generate_smart_results(bug_description, app_state.indexed_repo_url)
