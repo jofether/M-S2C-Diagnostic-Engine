@@ -109,9 +109,7 @@ function App() {
         setIndexedFiles([''])  // Fallback if no files
       }
 
-      setTimeout(() => {
-        setCurrentState('QUERY')
-      }, 1500)
+      setCurrentState('QUERY')
     } catch (error) {
       console.error('❌ Indexing error full:', error)
       console.error('   Error type:', error.constructor.name)
@@ -171,9 +169,7 @@ function App() {
         })
       }
 
-      setTimeout(() => {
-        setCurrentState('RESULTS')
-      }, 1000)
+      setCurrentState('RESULTS')
     } catch (error) {
       console.error('❌ Diagnosis error full:', error)
       console.error('   Error type:', error.constructor.name)
@@ -247,29 +243,6 @@ function App() {
         ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' 
         : 'bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50'
     }`}>
-      {/* Dark Mode Toggle */}
-      <div className={`fixed top-4 right-4 z-50 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-        <button
-          onClick={() => setDarkMode(!darkMode)}
-          className={`p-2 rounded-full transition-all duration-300 hover:scale-110 ${
-            darkMode
-              ? 'bg-slate-700 hover:bg-slate-600'
-              : 'bg-white shadow-md hover:shadow-lg border border-slate-200'
-          }`}
-          title={darkMode ? 'Light Mode' : 'Dark Mode'}
-        >
-          {darkMode ? (
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zM4.22 4.22a1 1 0 011.414 0l.707.707a1 1 0 11-1.414 1.414l-.707-.707a1 1 0 010-1.414zm11.314 0a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM4 10a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm12 0a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm-8 6a1 1 0 01.707-.293h.586a1 1 0 110 2h-.586a1 1 0 01-.707-1.707zM9 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-          ) : (
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-            </svg>
-          )}
-        </button>
-      </div>
-
       {(currentState === 'LOADING' || currentState === 'LOADING_RESULTS') && (
         <LoadingState
           message={
@@ -302,6 +275,7 @@ function App() {
           onDrop={handleDrop}
           onFileSelect={handleFileSelect}
           darkMode={darkMode}
+          setDarkMode={setDarkMode}
         />
       )}
 
@@ -309,6 +283,7 @@ function App() {
         <ResultsState 
           onBackToQuery={handleBackToQuery} 
           darkMode={darkMode}
+          setDarkMode={setDarkMode}
           results={diagnosticResults}
           alphaWeights={alphaWeights}
         />
@@ -477,13 +452,14 @@ function QueryState({
   onDrop,
   onFileSelect,
   darkMode,
+  setDarkMode,
 }) {
   return (
     <div className={`min-h-screen flex flex-col ${
       darkMode ? 'bg-slate-900' : 'bg-white'
     }`}>
       {/* Header */}
-      <div className={`border-b ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'} px-4 py-2 flex items-center justify-between gap-4 flex-wrap`}>
+      <div className={`border-b ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'} px-4 py-2 flex items-center justify-between relative`}>
         <div className="min-w-0">
           <h1 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
             M-S2C Diagnostic Engine
@@ -494,18 +470,44 @@ function QueryState({
             </p>
           )}
         </div>
-        {repositoryIndexed && (
+        
+        {/* Buttons Wrapper */}
+        <div className={`absolute top-4 right-4 flex items-center gap-2 z-40 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+          {/* Dark Mode Toggle */}
           <button
-            onClick={onChangeRepository}
-            className={`px-2 py-1 rounded text-xs font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
+            onClick={() => setDarkMode(!darkMode)}
+            className={`p-2 rounded-full transition-all duration-300 hover:scale-110 ${
               darkMode
-                ? 'bg-slate-700 hover:bg-slate-600 text-white'
-                : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
+                ? 'bg-slate-700 hover:bg-slate-600'
+                : 'bg-white shadow-sm hover:shadow-md border border-slate-200'
             }`}
+            title={darkMode ? 'Light Mode' : 'Dark Mode'}
           >
-            Change Repo
+            {darkMode ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zM4.22 4.22a1 1 0 011.414 0l.707.707a1 1 0 11-1.414 1.414l-.707-.707a1 1 0 010-1.414zm11.314 0a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM4 10a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm12 0a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm-8 6a1 1 0 01.707-.293h.586a1 1 0 110 2h-.586a1 1 0 01-.707-1.707zM9 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+              </svg>
+            )}
           </button>
-        )}
+          
+          {/* Change Repo Button */}
+          {repositoryIndexed && (
+            <button
+              onClick={onChangeRepository}
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
+                darkMode
+                  ? 'bg-slate-700 hover:bg-slate-600 text-white'
+                  : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
+              }`}
+            >
+              Change Repo
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Chat Area */}
@@ -724,7 +726,7 @@ function QueryState({
 // ============================================================================
 // STATE IV: ChatGPT-Style Results as Chat Thread
 // ============================================================================
-function ResultsState({ onBackToQuery, darkMode, results = [], alphaWeights = { text: 50, visual: 50 } }) {
+function ResultsState({ onBackToQuery, darkMode, setDarkMode, results = [], alphaWeights = { text: 50, visual: 50 } }) {
   const displayResults = results && results.length > 0 ? results : []
   const [copiedIndex, setCopiedIndex] = useState(-1)
 
@@ -741,20 +743,46 @@ function ResultsState({ onBackToQuery, darkMode, results = [], alphaWeights = { 
       darkMode ? 'bg-slate-900' : 'bg-white'
     }`}>
       {/* Header */}
-      <div className={`border-b ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'} px-4 py-2 flex items-center justify-between gap-4 flex-wrap`}>
+      <div className={`border-b ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'} px-4 py-2 flex items-center justify-between relative`}>
         <h1 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
           Analysis Results
         </h1>
-        <button
-          onClick={onBackToQuery}
-          className={`px-2 py-1 rounded text-xs font-medium transition-colors flex-shrink-0 ${
-            darkMode
-              ? 'bg-slate-700 hover:bg-slate-600 text-white'
-              : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
-          }`}
-        >
-          ← New Query
-        </button>
+        
+        {/* Buttons Wrapper */}
+        <div className={`absolute top-4 right-4 flex items-center gap-2 z-40 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className={`p-2 rounded-full transition-all duration-300 hover:scale-110 ${
+              darkMode
+                ? 'bg-slate-700 hover:bg-slate-600'
+                : 'bg-white shadow-sm hover:shadow-md border border-slate-200'
+            }`}
+            title={darkMode ? 'Light Mode' : 'Dark Mode'}
+          >
+            {darkMode ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zM4.22 4.22a1 1 0 011.414 0l.707.707a1 1 0 11-1.414 1.414l-.707-.707a1 1 0 010-1.414zm11.314 0a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM4 10a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm12 0a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm-8 6a1 1 0 01.707-.293h.586a1 1 0 110 2h-.586a1 1 0 01-.707-1.707zM9 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+              </svg>
+            )}
+          </button>
+          
+          {/* New Query Button */}
+          <button
+            onClick={onBackToQuery}
+            className={`px-2 py-1 rounded text-xs font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
+              darkMode
+                ? 'bg-slate-700 hover:bg-slate-600 text-white'
+                : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
+            }`}
+          >
+            ← New Query
+          </button>
+        </div>
       </div>
 
       {/* Chat Messages Area */}
