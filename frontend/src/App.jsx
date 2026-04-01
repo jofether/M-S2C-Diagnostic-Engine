@@ -39,16 +39,8 @@ function App() {
       setLoadingMessage(messages[messageIndex])
     }, 1500)
 
-    // After 6 seconds (4 message cycles), transition to query state
-    const transitionTimer = setTimeout(() => {
-      clearInterval(messageInterval)
-      setCurrentState('QUERY')
-      setLoadingMessage('Parsing ASTs with Tree-sitter...')
-    }, 6000)
-
     return () => {
       clearInterval(messageInterval)
-      clearTimeout(transitionTimer)
     }
   }, [currentState])
 
