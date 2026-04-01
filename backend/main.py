@@ -60,12 +60,17 @@ except (ImportError, OSError) as e:
             query_lower = text_query.lower()
             query_words = set(query_lower.split())
             
+            logger.info(f"🔍 RETRIEVER: Query = '{text_query}'")
+            logger.info(f"📝 RETRIEVER: Query words = {query_words}")
+            
             # Score each file based on keyword matches in snippets
             file_scores = {}
+            file_score_details = {}  # For logging
             
             for file_path, snippet in self.global_corpus:
                 if file_path not in file_scores:
                     file_scores[file_path] = 0.0
+                    file_score_details[file_path] = []
                 
                 snippet_lower = snippet.lower()
                 file_name_lower = file_path.lower()
@@ -76,25 +81,66 @@ except (ImportError, OSError) as e:
                 # Strong bonus: query appears as substring in filename
                 if full_query in file_name_lower:
                     score = 1000  # Very high score for exact substring match
+                    file_score_details[file_path].append(f"Full query substring in filename: +1000")
                 else:
                     # Regular word-based matching
-                    matches = sum(1 for word in query_words if len(word) > 2 and word in snippet_lower)
-                    # Bonus for file name matches (higher weight now: 5x instead of 2x)  
-                    file_matches = sum(1 for word in query_words if len(word) > 2 and word in file_name_lower)
-                    score = matches + (file_matches * 5)  # Increased boost for file name matches
+                    snippet_matches = sum(1 for word in query_words if len(word) > 2 and word in snippet_lower)
+                    
+                    # Bonus for file name matches (higher weight: 10x for semantic matching)  
+                    file_name_matches = sum(1 for word in query_words if len(word) > 2 and word in file_name_lower)
+                    
+                    # Enhanced scoring for CSS/styling-related keywords
+                    css_keywords = {'opacity', 'transparent', 'css', 'badge', 'className', 'style', 'washed', 'rendered'}
+                    styling_bonus = sum(10 for word in query_words if word in css_keywords and word in snippet_lower)
+                    
+                    # Component-specific bonus for contextual features
+                    # If query mentions "hero" or "banner" and file is *Hero, give big bonus
+                    semantic_bonus = 0
+                    if any(word in query_lower for word in ['hero', 'banner', 'recipe']):
+                        if 'hero' in file_name_lower:
+                            semantic_bonus += 50
+                        if 'recipe' in file_name_lower:
+                            semantic_bonus += 20
+                    
+                    # Give bonus for UI component terms appearing in both query and filename
+                    ui_terms = {'badge', 'difficulty', 'level', 'rating', 'card', 'display', 'show', 'render'}
+                    for term in ui_terms:
+                        if term in query_lower and term in file_name_lower:
+                            semantic_bonus += 30  # Strong bonus for semantic match
+                        elif term in query_lower and term in snippet_lower:
+                            semantic_bonus += 5
+                    
+                    score = snippet_matches + (file_name_matches * 10) + styling_bonus + semantic_bonus
+                    
+                    if snippet_matches > 0:
+                        file_score_details[file_path].append(f"Snippet matches: +{snippet_matches}")
+                    if file_name_matches > 0:
+                        file_score_details[file_path].append(f"Filename matches (×10): +{file_name_matches * 10}")
+                    if styling_bonus > 0:
+                        file_score_details[file_path].append(f"CSS keywords bonus: +{styling_bonus}")
+                    if semantic_bonus > 0:
+                        file_score_details[file_path].append(f"Semantic bonus: +{semantic_bonus}")
                 
                 file_scores[file_path] += score
             
+            # LOG: Show all scored files
+            logger.info(f"📊 SCORING DETAILS:")
+            for file_path, score in sorted(file_scores.items(), key=lambda x: x[1], reverse=True):
+                details = " | ".join(file_score_details[file_path]) if file_score_details[file_path] else "No matches"
+                logger.info(f"  [{score:6.1f}] {file_path} → {details}")
+            
             # Sort by score
             sorted_files = sorted(file_scores.items(), key=lambda x: x[1], reverse=True)
+            logger.info(f"🏆 RETRIEVER: Top {k} results selected:")
             
             # Get top k files with their snippets
             results = []
-            for file_path, score in sorted_files[:k]:
+            for i, (file_path, score) in enumerate(sorted_files[:k]):
                 # Find first snippet for this file
                 for fp, snippet in self.global_corpus:
                     if fp == file_path:
                         results.append((file_path, snippet))
+                        logger.info(f"  {i+1}. {file_path} (score: {score:.1f})")
                         break
             
             # Ensure we have exactly k results
@@ -633,20 +679,27 @@ async def diagnose_bug(bug_description: str = Form(...), screenshot: UploadFile 
                 )
                 
                 # Format results from retriever in format frontend expects: [[filepath_with_lines, code], ...]
+                logger.info(f"📤 RETRIEVER RETURNED {len(top_results)} results")
                 for idx, (file_path, snippet) in enumerate(top_results):
                     # file_path already contains line numbers in format "path/file.jsx (Lines X-Y)"
-                    results.append([
+                    formatted_result = [
                         file_path,  # First element: filepath with line numbers
                         snippet[:500].strip()  # Second element: code snippet
-                    ])
+                    ]
+                    results.append(formatted_result)
+                    logger.info(f"   Result {idx+1}: {file_path}")
+                    logger.info(f"   Code preview: {snippet[:100]}...")
                 
                 print(f"✅ Retrieved {len(results)} results from repository")
+                logger.info(f"✅ Retrieved {len(results)} results from repository")
                 
             except Exception as e:
                 print(f"❌ Search failed: {e}")
+                logger.error(f"❌ Search failed: {e}")
                 import traceback
                 traceback.print_exc()
                 print(f"🔄 Falling back to keyword matching...")
+                logger.info(f"🔄 Falling back to keyword matching...")
                 results = generate_smart_results(bug_description, app_state.indexed_repo_url)
         
         # Determine alpha weights based on description length and type

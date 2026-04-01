@@ -655,11 +655,23 @@ function ResultsState({ onBackToQuery, darkMode, results = [], alphaWeights = { 
 // Result Card Component
 // ============================================================================
 function ResultCard({ result, rank, darkMode, alphaWeights = { text: 50, visual: 50 } }) {
-  // Support both old and new data formats
-  const filePathAndLines = result.filePathAndLines || `${result.file} (${result.lines})`
-  const codeSnippet = result.codeSnippet || result.code || ''
-  const textContribution = result.textContribution || alphaWeights.text
-  const visualContribution = result.visualContribution || alphaWeights.visual
+  // Handle both array format [filepath, code] and object format {file, code, ...}
+  let filePathAndLines = ''
+  let codeSnippet = ''
+  let textContribution = alphaWeights.text
+  let visualContribution = alphaWeights.visual
+
+  if (Array.isArray(result)) {
+    // New format: [filepath_with_lines, code]
+    filePathAndLines = result[0] || 'Unknown File'
+    codeSnippet = result[1] || ''
+  } else {
+    // Old format: {filePathAndLines, code, ...}
+    filePathAndLines = result.filePathAndLines || `${result.file} (${result.lines})` || 'Unknown File'
+    codeSnippet = result.codeSnippet || result.code || ''
+    textContribution = result.textContribution || textContribution
+    visualContribution = result.visualContribution || visualContribution
+  }
 
   return (
     <div className={`rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 backdrop-blur-sm ${
