@@ -1140,8 +1140,8 @@ function QueryState({
                     onChange={(e) => setTargetFileHint(e.target.value)}
                     className={`w-full px-2 py-1.5 border rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent transition-all ${
                       darkMode
-                        ? 'bg-slate-700/50 border-slate-600 text-white'
-                        : 'bg-slate-50 border-slate-300 text-slate-900'
+                        ? 'bg-slate-700/50 border-slate-600 text-white [&_option]:bg-slate-800 [&_option]:text-white'
+                        : 'bg-slate-50 border-slate-300 text-slate-900 [&_option]:bg-white [&_option]:text-slate-900'
                     }`}
                   >
                     {indexedFiles.map((file) => (
