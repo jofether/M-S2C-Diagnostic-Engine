@@ -5,6 +5,7 @@ function App() {
   const [repositoryUrl, setRepositoryUrl] = useState('')
   const [bugDescription, setBugDescription] = useState('')
   const [uploadedFile, setUploadedFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
   const [loadingMessage, setLoadingMessage] = useState('Parsing ASTs with Tree-sitter...')
   const [dragActive, setDragActive] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
@@ -58,6 +59,15 @@ function App() {
     setCurrentState('QUERY')
     setBugDescription('')
     setUploadedFile(null)
+    setImagePreview(null)
+  }
+
+  const handleBackToInitial = () => {
+    setCurrentState('INITIAL')
+    setRepositoryUrl('')
+    setBugDescription('')
+    setUploadedFile(null)
+    setImagePreview(null)
   }
 
   const handleDrag = (e) => {
@@ -79,6 +89,11 @@ function App() {
     if (files && files[0]) {
       if (files[0].type.startsWith('image/')) {
         setUploadedFile(files[0])
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          setImagePreview(event.target.result)
+        }
+        reader.readAsDataURL(files[0])
       }
     }
   }
@@ -86,6 +101,11 @@ function App() {
   const handleFileSelect = (e) => {
     if (e.target.files && e.target.files[0]) {
       setUploadedFile(e.target.files[0])
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        setImagePreview(event.target.result)
+      }
+      reader.readAsDataURL(e.target.files[0])
     }
   }
 
@@ -143,7 +163,9 @@ function App() {
           bugDescription={bugDescription}
           setBugDescription={setBugDescription}
           uploadedFile={uploadedFile}
+          imagePreview={imagePreview}
           onDiagnoseBug={handleDiagnoseBug}
+          onBackToInitial={handleBackToInitial}
           onDrag={handleDrag}
           dragActive={dragActive}
           onDrop={handleDrop}
@@ -303,7 +325,9 @@ function QueryState({
   bugDescription,
   setBugDescription,
   uploadedFile,
+  imagePreview,
   onDiagnoseBug,
+  onBackToInitial,
   onDrag,
   dragActive,
   onDrop,
@@ -316,17 +340,29 @@ function QueryState({
     }`}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-12">
-          <h1 className={`text-4xl font-bold mb-2 ${
-            darkMode ? 'text-white' : 'text-slate-900'
-          }`}>
-            Report a Bug
-          </h1>
-          <p className={`text-lg ${
-            darkMode ? 'text-slate-400' : 'text-slate-600'
-          }`}>
-            Provide a text description and visual evidence for diagnosis
-          </p>
+        <div className="mb-12 flex items-center justify-between">
+          <div>
+            <h1 className={`text-4xl font-bold mb-2 ${
+              darkMode ? 'text-white' : 'text-slate-900'
+            }`}>
+              Report a Bug
+            </h1>
+            <p className={`text-lg ${
+              darkMode ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              Provide a text description and visual evidence for diagnosis
+            </p>
+          </div>
+          <button
+            onClick={onBackToInitial}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 whitespace-nowrap ${
+              darkMode
+                ? 'bg-slate-700 hover:bg-slate-600 text-white'
+                : 'bg-white border border-slate-300 hover:bg-slate-50 text-slate-700'
+            }`}
+          >
+            ← Change Repository
+          </button>
         </div>
 
         {/* Form Container */}
@@ -350,18 +386,30 @@ function QueryState({
             <textarea
               value={bugDescription}
               onChange={(e) => setBugDescription(e.target.value)}
-              placeholder="e.g., The login button is overlapping the container and extending beyond the viewport..."
+              placeholder="📝 Describe the bug you encountered..."
               className={`w-full h-48 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-colors duration-200 ${
                 darkMode
                   ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500'
                   : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
               }`}
             />
+            <div className={`mt-3 p-3 rounded-lg text-xs ${
+              darkMode
+                ? 'bg-slate-700/40 text-slate-400'
+                : 'bg-indigo-50 text-slate-600'
+            }`}>
+              <p className="font-semibold mb-2">💡 Helpful tips:</p>
+              <ul className="space-y-1 ml-2">
+                <li>• Describe what's happening (the symptom)</li>
+                <li>• Mention the component or feature affected</li>
+                <li>• Include the expected vs. actual behavior</li>
+                <li>• Note conditions (e.g., mobile, specific browser)</li>
+              </ul>
+            </div>
             <p className={`mt-2 text-xs ${
               darkMode ? 'text-slate-500' : 'text-slate-500'
             }`}>
-              {bugDescription.length} characters
-            </p>
+              {bugDescription.length} characters</p>
           </div>
 
           {/* Visual Evidence Upload */}
@@ -396,19 +444,31 @@ function QueryState({
                     : 'border-slate-300 bg-slate-50'
               }`}
             >
-              {uploadedFile ? (
-                <div className="space-y-3">
-                  <div className="text-4xl text-indigo-600">✓</div>
-                  <p className={`font-semibold ${
-                    darkMode ? 'text-white' : 'text-slate-900'
+              {uploadedFile && imagePreview ? (
+                <div className="space-y-4">
+                  {/* Image Preview */}
+                  <div className={`rounded-lg overflow-hidden border-2 ${
+                    darkMode ? 'border-slate-600' : 'border-slate-200'
                   }`}>
-                    {uploadedFile.name}
-                  </p>
-                  <p className={`text-sm ${
-                    darkMode ? 'text-slate-500' : 'text-slate-500'
-                  }`}>
-                    {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
+                    <img 
+                      src={imagePreview} 
+                      alt="Uploaded screenshot" 
+                      className="w-full h-40 object-cover"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-2xl text-indigo-600">✓</div>
+                    <p className={`font-semibold break-all ${
+                      darkMode ? 'text-white' : 'text-slate-900'
+                    }`}>
+                      {uploadedFile.name}
+                    </p>
+                    <p className={`text-sm ${
+                      darkMode ? 'text-slate-500' : 'text-slate-500'
+                    }`}>
+                      {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
                   <input
                     type="file"
                     accept="image/*"
