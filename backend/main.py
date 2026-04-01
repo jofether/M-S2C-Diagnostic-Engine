@@ -173,7 +173,7 @@ def clone_repository(repo_url: str, destination: str) -> bool:
 def extract_react_components(file_path: str) -> list:
     """
     Extract React components from a JavaScript/JSX file using regex.
-    This is a mock Tree-sitter implementation for quick parsing.
+    More aggressive pattern matching to catch all component types.
     
     Args:
         file_path: Path to the .jsx/.js/.tsx file
@@ -188,36 +188,53 @@ def extract_react_components(file_path: str) -> list:
         print(f"⚠️  Could not read {file_path}: {e}")
         return []
     
+    if not content.strip() or len(content) < 30:
+        return []
+    
     components = []
     
-    # Pattern 1: export function Component() { ... }
-    export_func_pattern = r'export\s+(?:default\s+)?function\s+(\w+)\s*\([^)]*\)\s*\{[^}]*(?:\{[^}]*\}[^}]*)*\}'
+    # Pattern 1: export function Component() or export default function Component()
+    pattern1 = r'export\s+(?:default\s+)?function\s+\w+\s*\([^)]*\)\s*\{(?:[^{}]|{[^}]*})*\}'
     
-    # Pattern 2: const Component = () => { ... }
-    const_arrow_pattern = r'(?:export\s+)?const\s+(\w+)\s*=\s*(?:\([^)]*\))?\s*=>\s*\{[^}]*(?:\{[^}]*\}[^}]*)*\}'
+    # Pattern 2: const Component = () => or const Component = function() or function Component()
+    pattern2 = r'(?:export\s+)?(?:default\s+)?(?:const|var|let)\s+\w+\s*=\s*(?:\([^)]*\))?\s*(?:=>|function)\s*\{(?:[^{}]|{[^}]*})*\}'
     
-    # Pattern 3: export const Component = { ... }
-    export_const_pattern = r'export\s+const\s+(\w+)\s*=\s*(?:React\.)?(?:memo\s*)?\([^)]*\)\s*\{[^}]*(?:\{[^}]*\}[^}]*)*\}'
+    # Pattern 3: Plain function Component()
+    pattern3 = r'(?<!export\s)function\s+\w+\s*\([^)]*\)\s*\{(?:[^{}]|{[^}]*})*\}'
     
-    # Try to extract functional components
-    for match in re.finditer(export_func_pattern, content, re.MULTILINE | re.DOTALL):
-        component_code = match.group(0)
-        # Limit to first 1500 chars to avoid huge blocks
-        components.append(component_code[:1500])
+    # Pattern 4: Default export - export default (catchall for any export pattern)
+    pattern4 = r'export\s+default\s+[^;]+?(?=\n(?:export|const|var|let|function|class|import|$))'
     
-    for match in re.finditer(const_arrow_pattern, content, re.MULTILINE | re.DOTALL):
-        component_code = match.group(0)
-        components.append(component_code[:1500])
+    patterns = [pattern1, pattern2, pattern3, pattern4]
     
-    for match in re.finditer(export_const_pattern, content, re.MULTILINE | re.DOTALL):
-        component_code = match.group(0)
-        components.append(component_code[:1500])
+    for pattern in patterns:
+        for match in re.finditer(pattern, content, re.MULTILINE | re.DOTALL):
+            component_code = match.group(0).strip()
+            # Only add if it's reasonable length and contains JSX markers or function definition
+            if len(component_code) > 50 and ('return' in component_code or 'jsx' in component_code.lower() or '<' in component_code):
+                components.append(component_code[:2000])
     
-    # If no components found with patterns, just take the whole file as one snippet
-    if not components and len(content.strip()) > 50:
+    # If nothing found with patterns, extract any return statement with JSX
+    if not components:
+        jsx_pattern = r'(?:function|const|=>)[^}]*?return\s*\([^)]*<[^>]+>[^}]*\)'
+        for match in re.finditer(jsx_pattern, content, re.MULTILINE | re.DOTALL):
+            code = match.group(0).strip()
+            if len(code) > 40:
+                components.append(code[:1500])
+    
+    # Fallback: if still nothing, return the first 1500 chars if file looks like a component
+    if not components and any(keyword in content for keyword in ['return', 'useState', 'useEffect', 'React', 'jsx']):
         components.append(content[:1500])
     
-    return components
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_components = []
+    for comp in components:
+        if comp not in seen:
+            seen.add(comp)
+            unique_components.append(comp)
+    
+    return unique_components[:3]  # Return max 3 per file
 
 
 def extract_css_rules(file_path: str) -> list:
@@ -474,8 +491,10 @@ async def index_repository(repo_url: str = Form(...)):
 async def diagnose_bug(bug_description: str = Form(...), screenshot: UploadFile = File(...)):
     """
     Performs semantic code retrieval on the indexed repository.
-    Uses CodeBERT + FAISS if available, falls back to keyword matching.
+    Uses keyword-based search on actual repository files.
     """
+    global global_indexed_data
+    
     # 1. Save the uploaded image temporarily
     temp_image_path = f"temp_{screenshot.filename}"
     with open(temp_image_path, "wb") as buffer:
@@ -489,49 +508,56 @@ async def diagnose_bug(bug_description: str = Form(...), screenshot: UploadFile 
         print(f"🖼️  Visual: {screenshot.filename}")
         print(f"📦 Repository: {app_state.indexed_repo_url}")
         print(f"📊 Indexed: {app_state.file_count} files, {app_state.snippet_count} snippets")
+        print(f"💾 Global indexed data has {len(global_indexed_data)} files")
+        print(f"🧠 Retriever has {len(retriever.unique_files)} files")
         
         results = []
         
-        # Check if we have actual indexed data
-        if app_state.is_indexed:
-            print(f"✅ Using indexed repository data")
-            print(f"🧠 Retriever has {len(retriever.unique_files)} files in index")
-            
-            if len(retriever.unique_files) == 0:
-                print(f"⚠️  WARNING: Retriever index is empty! Using fallback...")
-                results = generate_smart_results(bug_description, app_state.indexed_repo_url)
-            else:
-                # Use semantic search
-                try:
-                    print(f"🔍 Searching {len(retriever.global_corpus)} code snippets...")
-                    top_results, alpha_val = retriever.retrieve_top_k(
-                        text_query=bug_description,
-                        image_path=temp_image_path if os.path.exists(temp_image_path) else None,
-                        k=3,
-                        mode="multimodal",
-                        scope="file"
-                    )
-                    
-                    # Format results from retriever
-                    for idx, (file_path, snippet) in enumerate(top_results):
-                        confidence = 0.95 - (idx * 0.05)
-                        
-                        results.append({
-                            "file": file_path,
-                            "lines": f"indexed-result-{idx+1}",
-                            "code": snippet[:500],
-                            "confidence": confidence
-                        })
-                    
-                    print(f"✅ Retrieved {len(results)} results from indexed repository")
-                    
-                except Exception as e:
-                    print(f"❌ Search failed: {e}")
-                    print(f"🔄 Falling back to keyword matching...")
-                    results = generate_smart_results(bug_description, app_state.indexed_repo_url)
-        else:
-            print(f"⚠️  No indexed repository - using keyword fallback")
+        # Check if we have actual indexed data (not default dummy)
+        is_real_index = len(global_indexed_data) > 3 or (
+            len(global_indexed_data) >= 3 and 
+            not all(f in global_indexed_data for f in ["src/components/Login.jsx", "src/layouts/Container.jsx", "src/styles/forms.css"])
+        )
+        
+        if not app_state.is_indexed:
+            print(f"⚠️  No repository indexed yet - using keyword fallback")
             results = generate_smart_results(bug_description, app_state.indexed_repo_url)
+        elif not is_real_index:
+            print(f"⚠️  Using default dummy index (no real repository indexed)")
+            results = generate_smart_results(bug_description, app_state.indexed_repo_url)
+        else:
+            # Use the retriever with real indexed data
+            print(f"✅ Using real indexed repository data")
+            print(f"🔍 Searching {len(retriever.global_corpus)} code snippets...")
+            
+            try:
+                top_results, alpha_val = retriever.retrieve_top_k(
+                    text_query=bug_description,
+                    image_path=temp_image_path if os.path.exists(temp_image_path) else None,
+                    k=3,
+                    mode="multimodal",
+                    scope="file"
+                )
+                
+                # Format results from retriever
+                for idx, (file_path, snippet) in enumerate(top_results):
+                    confidence = 0.95 - (idx * 0.05)
+                    
+                    results.append({
+                        "file": file_path,
+                        "lines": f"indexed-{idx+1}",
+                        "code": snippet[:500].strip(),
+                        "confidence": confidence
+                    })
+                
+                print(f"✅ Retrieved {len(results)} results from repository")
+                
+            except Exception as e:
+                print(f"❌ Search failed: {e}")
+                import traceback
+                traceback.print_exc()
+                print(f"🔄 Falling back to keyword matching...")
+                results = generate_smart_results(bug_description, app_state.indexed_repo_url)
         
         # Determine alpha weights based on description length and type
         alpha_text, alpha_visual = compute_gating_weight(bug_description)
@@ -543,10 +569,9 @@ async def diagnose_bug(bug_description: str = Form(...), screenshot: UploadFile 
             "candidates": results,
             "repository": app_state.indexed_repo_url,
             "indexed": app_state.is_indexed,
+            "using_real_data": is_real_index,
             "indexed_files": app_state.file_count,
-            "indexed_snippets": app_state.snippet_count,
-            "pytorch_available": PYTORCH_AVAILABLE,
-            "semantic_search": app_state.is_indexed
+            "indexed_snippets": app_state.snippet_count
         }
         
         print(f"✅ Diagnosis complete - {len(results)} candidates returned")

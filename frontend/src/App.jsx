@@ -9,6 +9,8 @@ function App() {
   const [loadingMessage, setLoadingMessage] = useState('Parsing ASTs with Tree-sitter...')
   const [dragActive, setDragActive] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
+  const [diagnosticResults, setDiagnosticResults] = useState([])
+  const [alphaWeights, setAlphaWeights] = useState({ text: 50, visual: 50 })
 
   // Simulate repository indexing with cycling messages
   useEffect(() => {
@@ -39,19 +41,66 @@ function App() {
     }
   }, [currentState])
 
-  const handleIndexRepository = () => {
-    if (repositoryUrl.trim()) {
-      setCurrentState('LOADING')
+  const handleIndexRepository = async () => {
+    if (!repositoryUrl.trim()) return
+
+    setCurrentState('LOADING')
+
+    try {
+      const formData = new FormData()
+      formData.append('repo_url', repositoryUrl.trim())
+
+      const response = await fetch('http://localhost:8000/api/index-repository', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+      console.log('Index response:', data)
+
+      setTimeout(() => {
+        setCurrentState('QUERY')
+      }, 1500)
+    } catch (error) {
+      console.error('Indexing error:', error)
+      alert(`Indexing failed: ${error.message}`)
+      setCurrentState('INITIAL')
     }
   }
 
-  const handleDiagnoseBug = () => {
-    if (bugDescription.trim() && uploadedFile) {
-      setCurrentState('LOADING_RESULTS')
-      // Simulate multimodal fusion processing
+  const handleDiagnoseBug = async () => {
+    if (!bugDescription.trim() || !uploadedFile) return
+
+    setCurrentState('LOADING_RESULTS')
+
+    try {
+      const formData = new FormData()
+      formData.append('bug_description', bugDescription.trim())
+      formData.append('screenshot', uploadedFile)
+
+      const response = await fetch('http://localhost:8000/api/diagnose', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+      console.log('Diagnosis response:', data)
+
+      if (data.candidates && data.candidates.length > 0) {
+        setDiagnosticResults(data.candidates)
+        setAlphaWeights({
+          text: Math.round((data.alpha_text || 0.5) * 100),
+          visual: Math.round((data.alpha_visual || 0.5) * 100),
+        })
+      }
+
       setTimeout(() => {
         setCurrentState('RESULTS')
-      }, 2500)
+      }, 1000)
+    } catch (error) {
+      console.error('Diagnosis error:', error)
+      alert(`Diagnosis failed: ${error.message}`)
+      setCurrentState('QUERY')
     }
   }
 
@@ -175,7 +224,12 @@ function App() {
       )}
 
       {currentState === 'RESULTS' && (
-        <ResultsState onBackToQuery={handleBackToQuery} darkMode={darkMode} />
+        <ResultsState 
+          onBackToQuery={handleBackToQuery} 
+          darkMode={darkMode}
+          results={diagnosticResults}
+          alphaWeights={alphaWeights}
+        />
       )}
     </div>
   )
@@ -535,47 +589,8 @@ function QueryState({
 // ============================================================================
 // STATE IV: Results Dashboard
 // ============================================================================
-function ResultsState({ onBackToQuery, darkMode }) {
-  const mockResults = [
-    {
-      filePathAndLines: 'src/components/Login.jsx (Lines 42-55)',
-      codeSnippet: `export function LoginButton() {
-  return (
-    <button className="px-4 py-2
-      bg-blue-500 hover:bg-blue-600">
-      Login
-    </button>
-  )
-}`,
-      textContribution: 30,
-      visualContribution: 70,
-    },
-    {
-      filePathAndLines: 'src/styles/forms.css (Lines 128-145)',
-      codeSnippet: `.login-btn {
-  position: absolute;
-  right: -20px;
-  width: 140px;
-  overflow: visible;
-  z-index: 999;
-}`,
-      textContribution: 25,
-      visualContribution: 75,
-    },
-    {
-      filePathAndLines: 'src/layouts/Container.jsx (Lines 89-102)',
-      codeSnippet: `function Container({ children }) {
-  return (
-    <div className="w-full
-      overflow-hidden px-4">
-      {children}
-    </div>
-  )
-}`,
-      textContribution: 45,
-      visualContribution: 55,
-    },
-  ]
+function ResultsState({ onBackToQuery, darkMode, results = [], alphaWeights = { text: 50, visual: 50 } }) {
+  const displayResults = results && results.length > 0 ? results : []
 
   return (
     <div className={`min-h-screen py-12 px-4 sm:px-6 lg:px-8 ${
@@ -610,9 +625,17 @@ function ResultsState({ onBackToQuery, darkMode }) {
 
         {/* Results Cards */}
         <div className="space-y-6">
-          {mockResults.map((result, index) => (
-            <ResultCard key={index} result={result} rank={index + 1} darkMode={darkMode} />
-          ))}
+          {displayResults.length > 0 ? (
+            displayResults.map((result, index) => (
+              <ResultCard key={index} result={result} rank={index + 1} darkMode={darkMode} alphaWeights={alphaWeights} />
+            ))
+          ) : (
+            <div className={`p-8 rounded-lg text-center ${
+              darkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'
+            }`}>
+              <p>No results available. Please try again.</p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -631,7 +654,13 @@ function ResultsState({ onBackToQuery, darkMode }) {
 // ============================================================================
 // Result Card Component
 // ============================================================================
-function ResultCard({ result, rank, darkMode }) {
+function ResultCard({ result, rank, darkMode, alphaWeights = { text: 50, visual: 50 } }) {
+  // Support both old and new data formats
+  const filePathAndLines = result.filePathAndLines || `${result.file} (${result.lines})`
+  const codeSnippet = result.codeSnippet || result.code || ''
+  const textContribution = result.textContribution || alphaWeights.text
+  const visualContribution = result.visualContribution || alphaWeights.visual
+
   return (
     <div className={`rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 backdrop-blur-sm ${
       darkMode
@@ -646,7 +675,7 @@ function ResultCard({ result, rank, darkMode }) {
           </div>
           <div>
             <h3 className="text-white font-semibold text-lg">
-              {result.filePathAndLines}
+              {filePathAndLines}
             </h3>
             <p className="text-indigo-100 text-sm">Candidate AST Node</p>
           </div>
@@ -667,7 +696,7 @@ function ResultCard({ result, rank, darkMode }) {
               ? 'bg-slate-900/80 text-slate-100 border border-slate-700'
               : 'bg-slate-900 text-slate-100 border border-slate-700'
           }`}>
-            <code>{result.codeSnippet}</code>
+            <code>{codeSnippet}</code>
           </pre>
         </div>
 
@@ -687,16 +716,16 @@ function ResultCard({ result, rank, darkMode }) {
                 {/* Text Contribution */}
                 <div
                   className="bg-gradient-to-r from-blue-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold transition-all duration-300"
-                  style={{ width: `${result.textContribution}%` }}
+                  style={{ width: `${textContribution}%` }}
                 >
-                  {result.textContribution > 10 && `${result.textContribution}%`}
+                  {textContribution > 10 && `${textContribution}%`}
                 </div>
                 {/* Visual Contribution */}
                 <div
                   className="bg-gradient-to-r from-purple-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold transition-all duration-300"
-                  style={{ width: `${result.visualContribution}%` }}
+                  style={{ width: `${visualContribution}%` }}
                 >
-                  {result.visualContribution > 10 && `${result.visualContribution}%`}
+                  {visualContribution > 10 && `${visualContribution}%`}
                 </div>
               </div>
             </div>
@@ -707,13 +736,13 @@ function ResultCard({ result, rank, darkMode }) {
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-gradient-to-r from-blue-400 to-blue-500 rounded" />
               <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-                Text: <span className="font-semibold">{result.textContribution}%</span>
+                Text: <span className="font-semibold">{textContribution}%</span>
               </span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-gradient-to-r from-purple-400 to-purple-500 rounded" />
               <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-                Visual: <span className="font-semibold">{result.visualContribution}%</span>
+                Visual: <span className="font-semibold">{visualContribution}%</span>
               </span>
             </div>
           </div>
