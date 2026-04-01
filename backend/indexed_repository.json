@@ -1,68 +1,68 @@
 {
-  "repo_url": "https://github.com/EdrianHernandez/Orbit/tree/buggy",
-  "timestamp": "2026-04-02 02:05:40.880118",
-  "files_indexed": 22,
-  "snippets_indexed": 22,
+  "repo_url": "https://github.com/EdrianHernandez/Helios-Solar/tree/buggy",
+  "timestamp": "2026-04-02 02:25:54.103625",
+  "files_indexed": 21,
+  "snippets_indexed": 21,
   "index_dict": {
-    "App.jsx (Lines 12-41)": [
-      "<div className=\"h-screen w-full flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans\">\n      {/* Top Header */}\n      <BoardHeader />\n\n      {/* Main Content Area */}\n      <div className=\"flex-1 flex overflow-hidden relative\">\n        \n        {/* Kanban Board Area */}\n        <main className=\"flex-1 flex flex-col min-w-0 overflow-hidden relative\">\n            <KanbanBoard tasks={INITIAL_TASKS} />\n            \n            {/* Sidebar Toggle (Floating on Mobile, Fixed on Desktop) */}\n            <button \n                onClick={() => setIsSidebarOpen(!isSidebarOpen)}\n                className={`absolute bottom-6 right-6 z-30 bg-white p-3 rounded-full shadow-lg border border-gray-200 text-gray-600 hover:text-blue-600 transition-all hover:scale-105 ${isSidebarOpen ? 'md:hidden' : 'flex'}`}\n                title=\"Toggle Activity Feed\"\n            >\n                {isSidebarOpen ? <PanelRightClose className=\"w-5 h-5\" /> : <PanelRightOpen className=\"w-5 h-5\" />}\n            </button>\n        </main>\n\n        {/* Right Sidebar */}\n        <div className={`${isSidebarOpen ? 'w-80' : 'w-0'} transition-all duration-300 ease-in-out relative border-l border-gray-200 bg-white flex-shrink-0 hidden md:block`}>\n           <div className=\"absolute inset-0 w-80\">\n                <ActivitySidebar \n                    activities={RECENT_ACTIVITY} \n                    isOpen={true} \n                    onClose={() => setIsSidebarOpen(false)} \n                />\n           </div>"
+    "App.jsx (Lines 71-80)": [
+      "<div className=\"min-h-screen bg-slate-50 flex flex-col\">\n      {/* Header */}\n      <header className=\"bg-white/80 backdrop-blur-md sticky top-0 z-10 border-b border-slate-200\">\n        <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between\">\n          <div className=\"flex items-center space-x-2\">\n            <svg className=\"w-8 h-8 text-emerald-500\" fill=\"currentColor\" viewBox=\"0 0 20 20\">\n              <path fillRule=\"evenodd\" d=\"M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.633 1.24l-1.745.558a1 1 0 01-1.251-1.25l.558-1.745 1.24-.633A4.005 4.005 0 019.5 15c-1.263 0-2.396-.576-3.165-1.479a1 1 0 01-1.05-.285l-1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1zm-5 8.274l-.818 2.552c.25.112.526.174.818.174.292 0 .569-.062.818-.174L5 10.274zm10 0l-.818 2.552c.25.112.526.174.818.174.292 0 .569-.062.818-.174L15 10.274z\" clipRule=\"evenodd\" />\n            </svg>\n            <span className=\"text-xl font-bold text-slate-900 tracking-tight\">Helios<span className=\"text-emerald-500\">Solar</span></span>\n          </div>"
     ],
-    "App.jsx (Lines 24-30)": [
-      "<button \n                onClick={() => setIsSidebarOpen(!isSidebarOpen)}\n                className={`absolute bottom-6 right-6 z-30 bg-white p-3 rounded-full shadow-lg border border-gray-200 text-gray-600 hover:text-blue-600 transition-all hover:scale-105 ${isSidebarOpen ? 'md:hidden' : 'flex'}`}\n                title=\"Toggle Activity Feed\"\n            >\n                {isSidebarOpen ? <PanelRightClose className=\"w-5 h-5\" /> : <PanelRightOpen className=\"w-5 h-5\" />}\n            </button>"
+    "App.jsx (Lines 94-96)": [
+      "<h1 className=\"text-4xl md:text-6xl font-extrabold tracking-tight mb-6\">\n              Power Your Home <br/><span className=\"text-emerald-400\">Pure Sunshine.</span>\n            </h1>"
     ],
     "index.html (Lines 2-6)": [
-      "<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>Orbit - Project Management</title>"
+      "<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>Helios Solar Calculator</title>"
     ],
     "index.html (Lines 7-7)": [
       "<script src=\"https://cdn.tailwindcss.com\"></script>"
     ],
-    "index.html (Lines 27-36)": [
-      "<script type=\"importmap\">\n{\n  \"imports\": {\n    \"react/\": \"https://esm.sh/react@^19.2.3/\",\n    \"react\": \"https://esm.sh/react@^19.2.3\",\n    \"react-dom/\": \"https://esm.sh/react-dom@^19.2.3/\",\n    \"lucide-react\": \"https://esm.sh/lucide-react@^0.562.0\"\n  }\n}\n</script>"
+    "index.html (Lines 25-33)": [
+      "<style>\n      body {\n        font-family: 'Inter', sans-serif;\n      }\n      /* Smooth scrolling for anchor links */\n      html {\n        scroll-behavior: smooth;\n      }\n    </style>"
     ],
-    "index.html (Lines 37-38)": [
+    "index.html (Lines 34-42)": [
+      "<script type=\"importmap\">\n{\n  \"imports\": {\n    \"react\": \"https://esm.sh/react@^19.2.3\",\n    \"react-dom/\": \"https://esm.sh/react-dom@^19.2.3/\",\n    \"react/\": \"https://esm.sh/react@^19.2.3/\"\n  }\n}\n</script>"
+    ],
+    "index.html (Lines 43-44)": [
       "<link rel=\"stylesheet\" href=\"/index.css\">\n</head>"
     ],
-    "index.html (Lines 39-40)": [
-      "<body>\n    <div id=\"root\"></div>"
+    "components\\ConsultationCTA.jsx (Lines 18-62)": [
+      "<section className=\"bg-slate-900 py-24 relative overflow-hidden\">\n      {/* Decorative background elements */}\n      <div className=\"absolute top-0 left-0 w-full h-full opacity-10\">\n         <svg className=\"w-full h-full\" viewBox=\"0 0 100 100\" preserveAspectRatio=\"none\">\n           <path d=\"M0 100 L100 0 L100 100 Z\" fill=\"white\" />\n         </svg>\n      </div>\n\n      <div className=\"max-w-4xl mx-auto px-4 relative z-10 text-center\">\n        <h2 className=\"text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight\">\n          Ready to Switch to Clean Energy?\n        </h2>\n        <p className=\"text-xl text-slate-300 mb-10 max-w-2xl mx-auto\">\n          Get a detailed, custom proposal for your home. Our solar experts are ready to answer all your questions.\n        </p>\n\n        {submitted ? (\n             <div className=\"bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 p-6 rounded-xl animate-fade-in opacity-0\">\n                <h3 className=\"text-2xl font-bold mb-2\">Request Received!</h3>\n                <p>We'll be in touch with you shortly at <span className=\"font-semibold text-white\">{email}</span>.</p>\n             </div>\n        ) : (\n            <form onSubmit={handleSubmit} className=\"flex flex-row sm:flex-col gap-12 justify-center items-stretch max-w-lg mx-auto\">\n            <input\n                type=\"email\"\n                required\n                value={email}\n                onChange={(e) => setEmail(e.target.value)}\n                placeholder=\"Enter your email address\"\n                className=\"flex-1 appearance-none rounded-lg py-8 px-2 text-slate-900 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-lg shadow-xl\"\n            />\n            <button\n                type=\"submit\"\n                className=\"cta-green-btn bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 px-8 rounded-lg shadow-lg transform transition hover:-translate-y-1 hover:shadow-emerald-500"
     ],
-    "components\\ActivitySidebar.jsx (Lines 8-58)": [
-      "<aside className=\"activity-sidebar w-12 bg-white border-l border-gray-200 flex flex-col h-full flex-shrink-0 absolute right-0 top-0 bottom-0 z-0 md:relative shadow-xl md:shadow-none\">\n      \n      {/* Header */}\n      <div className=\"p-5 border-b border-gray-100 flex items-center justify-between\">\n        <div className=\"flex items-center gap-2 text-gray-800\">\n            <Zap className=\"w-5 h-5 text-amber-500 fill-amber-500\" />\n            <h2 className=\"font-semibold text-base\">Activity Feed</h2>\n        </div>\n        <button \n            onClick={onClose}\n            className=\"md:hidden p-1 hover:bg-gray-100 rounded text-gray-500\"\n        >\n            <X className=\"w-5 h-5\" />\n        </button>\n      </div>\n\n      {/* List */}\n      <div className=\"flex-1 overflow-y-auto p-5 custom-scrollbar\">\n        <div className=\"relative border-l border-gray-200 ml-3.5 space-y-8\">\n            {activities.map((activity) => (\n                <div key={activity.id} className=\"relative pl-6 group\">\n                    {/* Timeline Dot */}\n                    <div className=\"absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-gray-300 ring-4 ring-white group-hover:bg-blue-500 transition-colors\"></div>\n                    \n                    {/* Content */}\n                    <div className=\"flex flex-col gap-1\">\n                        <div className=\"flex items-center gap-2 mb-1\">\n                             <img \n                                src={activity.user.avatar} \n                                alt={activity.user.name} \n                                className=\"w-6 h-6 rounded-full object-cover\"\n                            />\n                            <span className=\"text-sm font-semibold text-gray-900\">\n                                {activity.user.name}\n                            </span>\n                        </div>\n                        <p className=\"text-sm text-gray-600 leading-relaxed\">\n                            {activity.action} <span clas"
+    "components\\ConsultationCTA.jsx (Lines 27-29)": [
+      "<h2 className=\"text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight\">\n          Ready to Switch to Clean Energy?\n        </h2>"
     ],
-    "components\\ActivitySidebar.jsx (Lines 14-14)": [
-      "<h2 className=\"font-semibold text-base\">Activity Feed</h2>"
+    "components\\ConsultationCTA.jsx (Lines 36-36)": [
+      "<h3 className=\"text-2xl font-bold mb-2\">Request Received!</h3>"
     ],
-    "components\\ActivitySidebar.jsx (Lines 16-21)": [
-      "<button \n            onClick={onClose}\n            className=\"md:hidden p-1 hover:bg-gray-100 rounded text-gray-500\"\n        >\n            <X className=\"w-5 h-5\" />\n        </button>"
+    "components\\ConsultationCTA.jsx (Lines 49-54)": [
+      "<button\n                type=\"submit\"\n                className=\"cta-green-btn bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 px-8 rounded-lg shadow-lg transform transition hover:-translate-y-1 hover:shadow-emerald-500/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-emerald-500 text-lg whitespace-nowrap\"\n            >\n                Get Free Quote\n            </button>"
     ],
-    "components\\ActivitySidebar.jsx (Lines 53-56)": [
-      "<button className=\"w-full mt-8 py-2 text-sm text-blue-600 font-medium hover:bg-blue-50 rounded-lg transition-colors flex items-center justify-center gap-2 group\">\n            View all history\n            <ArrowRight className=\"w-4 h-4 group-hover:translate-x-1 transition-transform\" />\n        </button>"
+    "components\\ConsultationCTA.jsx (Lines 40-55)": [
+      "<form onSubmit={handleSubmit} className=\"flex flex-row sm:flex-col gap-12 justify-center items-stretch max-w-lg mx-auto\">\n            <input\n                type=\"email\"\n                required\n                value={email}\n                onChange={(e) => setEmail(e.target.value)}\n                placeholder=\"Enter your email address\"\n                className=\"flex-1 appearance-none rounded-lg py-8 px-2 text-slate-900 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-e"
     ],
-    "components\\BoardHeader.jsx (Lines 7-65)": [
-      "<header className=\"board-header bg-white border-b border-gray-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-0 z-0\">\n      \n      {/* Left: Title and Project Info */}\n      <div className=\"flex items-center gap-4\">\n        <div className=\"w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/20\">\n            <span className=\"text-white font-bold text-xl\">O</span>\n        </div>\n        <div>\n            <h1 className=\"text-xl font-bold text-gray-900 leading-none\">Orbit Design System</h1>\n            <p className=\"text-xs text-gray-500 mt-1\">Updated 10 mins ago</p>\n        </div>\n        <div className=\"h-8 w-px bg-gray-200 mx-2 hidden sm:block\"></div>\n        <div className=\"hidden sm:flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full\">\n            <span className=\"w-2 h-2 bg-green-500 rounded-full animate-pulse\"></span>\n            <span className=\"text-xs font-medium text-gray-600\">On Track</span>\n        </div>\n      </div>\n\n      {/* Right: Controls */}\n      <div className=\"flex items-center gap-3 sm:gap-6 w-full sm:w-auto justify-between sm:justify-end\">\n        \n        {/* Search */}\n        <div className=\"relative group hidden md:block\">\n            <Search className=\"absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors\" />\n            <input \n                type=\"text\" \n                placeholder=\"Search tasks...\" \n                className=\"pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-16 transition-all\"\n            />\n        </div>\n\n        {/* User Stack & Invite */}\n        <div className=\"flex items-center gap-3\">\n            <div className=\"flex -space-x-2\">\n                {USERS.slice(0, 3).map(user => (\n                    <img key={user.id} src={user.avatar} className=\"w-8 h-8 rounded-full border-2 bor"
+    "components\\ResultsDisplay.jsx (Lines 20-23)": [
+      "<div className=\"w-full max-w-4xl mx-auto mt-12 text-center p-12 bg-white rounded-2xl border-2 border-dashed border-slate-200\">\n        <div className=\"inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 mb-4\">\n             <svg className=\"w-8 h-8 text-slate-300\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth=\"2\" d=\"M13 10V3L4 14h7v7l9-11h-7z\"></path></svg>\n        </div>"
     ],
-    "components\\BoardHeader.jsx (Lines 15-15)": [
-      "<h1 className=\"text-xl font-bold text-gray-900 leading-none\">Orbit Design System</h1>"
+    "components\\ResultsDisplay.jsx (Lines 10-10)": [
+      "<h3 className=\"text-4xl font-extrabold text-slate-400 mb-2 tracking-tight\">{value}</h3>"
     ],
-    "components\\BoardHeader.jsx (Lines 48-51)": [
-      "<button className=\"flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm shadow-blue-600/20\">\n                <UserPlus className=\"w-4 h-4\" />\n                <span className=\"hidden sm:inline\">Invite</span>\n            </button>"
+    "components\\SavingsCalculator.jsx (Lines 27-28)": [
+      "<div className=\"w-full max-w-lg mx-auto bg-white rounded-2xl shadow-xl p-8 border border-slate-100 relative overflow-hidden\">\n      <div className=\"absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-teal-500\"></div>"
     ],
-    "components\\BoardHeader.jsx (Lines 56-58)": [
-      "<button className=\"p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors relative\">\n                <Filter className=\"w-5 h-5\" />\n            </button>"
+    "components\\SavingsCalculator.jsx (Lines 30-30)": [
+      "<h2 className=\"text-2xl font-bold text-slate-800 mb-6 text-center\">Calculate Your Savings</h2>"
     ],
-    "components\\KanbanBoard.jsx (Lines 14-34)": [
-      "<div className=\"kanban-board-container flex-1 overflow-x-auto overflow-y-hidden bg-gray-50/50\">\n      <div className=\"h-full flex-col p-6 gap-6 min-w-max\">\n        {COLUMNS.map((status) => {\n          const columnTasks = getTasksByStatus(status);\n          const taskCount = columnTasks.length;\n\n          return (\n            <div \n              key={status} \n              className=\"kanban-column flex flex-col w-80 max-h-full\"\n            >\n              {/* Column Header */}\n              <div className=\"flex items-center justify-between mb-4 px-1\">\n                <div className=\"flex items-center gap-2\">\n                  <h2 className=\"text-sm font-bold text-gray-700 uppercase tracking-wide\">\n                    {status}\n                  </h2>\n                  <span className=\"bg-gray-200 text-gray-600 text-xs font-semibold px-2 py-0.5 rounded-full\">\n                    {taskCount}\n                  </span>\n                </div>"
+    "components\\SavingsCalculator.jsx (Lines 34-36)": [
+      "<label htmlFor=\"state-select\" className=\"block text-sm font-semibold text-slate-600 mb-2 uppercase tracking-wide\">\n          Location\n        </label>"
     ],
-    "components\\KanbanBoard.jsx (Lines 21-34)": [
-      "<div \n              key={status} \n              className=\"kanban-column flex flex-col w-80 max-h-full\"\n            >\n              {/* Column Header */}\n              <div className=\"flex items-center justify-between mb-4 px-1\">\n                <div className=\"flex items-center gap-2\">\n                  <h2 className=\"text-sm font-bold text-gray-700 uppercase tracking-wide\">\n                    {status}\n                  </h2>\n                  <span className=\"bg-gray-200 text-gray-600 text-xs font-semibold px-2 py-0.5 rounded-full\">\n                    {taskCount}\n                  </span>\n                </div>"
+    "components\\SavingsCalculator.jsx (Lines 59-61)": [
+      "<label htmlFor=\"bill-input\" className=\"block text-sm font-semibold text-slate-600 mb-2 uppercase tracking-wide\">\n          Monthly Electric Bill\n        </label>"
     ],
-    "components\\KanbanBoard.jsx (Lines 28-30)": [
-      "<h2 className=\"text-sm font-bold text-gray-700 uppercase tracking-wide\">\n                    {status}\n                  </h2>"
+    "components\\SolarFeatures.jsx (Lines 44-65)": [
+      "<section className=\"py-20 bg-slate-50\">\n      <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">\n        <div className=\"text-center mb-16\">\n          <h2 className=\"text-3xl md:text-4xl font-extrabold text-slate-900 mb-4\">Why Go Solar?</h2>\n          <p className=\"text-lg text-slate-600 max-w-2xl mx-auto\">\n            Beyond the monthly savings, solar energy provides long-term stability and environmental benefits.\n          </p>\n        </div>\n        \n        <div className=\"grid grid-cols-4 md:grid-cols-2 lg:grid-cols-4 gap-8\">\n          {features.map((feature, index) => (\n            <div key={index} className=\"bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300 border border-slate-100\">\n              <div className=\"w-12 h-12 rounded-lg bg-emerald-500 flex items-center justify-center mb-12 shadow-emerald-200 shadow-lg -ml-4\">\n                {feature.icon}\n              </div>\n              <h3 className=\"text-xl font-bold text-slate-900 mb-3\">{feature.title}</h3>\n              <p className=\"text-slate-600 leading-relaxed\">{feature.description}</p>\n            </div>\n          ))}\n        </div>\n      </div>\n    </section>"
     ],
-    "components\\KanbanBoard.jsx (Lines 36-38)": [
-      "<button className=\"p-1 text-gray-400 hover:bg-gray-200 rounded transition\">\n                        <Plus className=\"w-4 h-4\" />\n                    </button>"
-    ],
-    "components\\KanbanBoard.jsx (Lines 58-61)": [
-      "<button className=\"flex items-center gap-2 text-gray-500 hover:text-gray-800 hover:bg-gray-200/50 p-2 rounded-lg text-sm font-medium transition-colors mt-1 text-left\">\n                    <Plus className=\"w-4 h-4\" />\n                    <span>New Task</span>\n                </button>"
+    "components\\SolarFeatures.jsx (Lines 47-47)": [
+      "<h2 className=\"text-3xl md:text-4xl font-extrabold text-slate-900 mb-4\">Why Go Solar?</h2>"
     ]
   }
 }

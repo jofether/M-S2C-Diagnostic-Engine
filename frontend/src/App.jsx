@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 function App() {
   const [currentState, setCurrentState] = useState('QUERY')
   const [repositoryUrl, setRepositoryUrl] = useState('')
   const [repositoryIndexed, setRepositoryIndexed] = useState(false)
   const [indexedRepoName, setIndexedRepoName] = useState('')
+  const [indexedBranchName, setIndexedBranchName] = useState('')
   const [bugDescription, setBugDescription] = useState('')
   const [targetFileHint, setTargetFileHint] = useState('')
   const [uploadedFile, setUploadedFile] = useState(null)
@@ -15,6 +16,8 @@ function App() {
   const [diagnosticResults, setDiagnosticResults] = useState([])
   const [alphaWeights, setAlphaWeights] = useState({ text: 50, visual: 50 })
   const [indexedFiles, setIndexedFiles] = useState([]) // Files from indexed repo
+  const [conversationHistory, setConversationHistory] = useState([]) // Chat-like conversation
+  const chatEndRef = useRef(null) // Files from indexed repo
 
   // Debug: Log whenever indexedFiles changes
   useEffect(() => {
@@ -87,9 +90,29 @@ function App() {
         throw new Error(data.message || 'Repository indexing failed')
       }
 
-      // Extract repo name from URL
-      const repoName = repositoryUrl.split('/').pop() || 'Repository'
+      // Extract repo name and branch from URL
+      const url = repositoryUrl.trim()
+      let repoName = 'Repository'
+      let branchName = 'main'
+      
+      // Parse GitHub URL format: https://github.com/org/repo or https://github.com/org/repo/tree/branch
+      const parts = url.split('/')
+      if (parts.length >= 4) {
+        // Check if URL contains /tree/ for branch specification
+        const treeIndex = parts.indexOf('tree')
+        if (treeIndex > 0 && parts.length > treeIndex + 1) {
+          // Format: https://github.com/org/repo/tree/branch
+          repoName = parts[treeIndex - 1] // repo name is right before /tree/
+          branchName = parts.slice(treeIndex + 1).join('/') // branch can contain slashes
+        } else {
+          // Format: https://github.com/org/repo (no branch specified)
+          repoName = parts[parts.length - 1] || 'Repository'
+          branchName = 'main' // default branch
+        }
+      }
+      
       setIndexedRepoName(repoName)
+      setIndexedBranchName(branchName)
       setRepositoryIndexed(true)
       
       // Set the files from the API response (not hardcoded)
@@ -119,8 +142,19 @@ function App() {
   }
 
   const handleDiagnoseBug = async () => {
-    if (!bugDescription.trim() || !uploadedFile) return
+    if (!bugDescription.trim()) return
 
+    // Add bug to conversation
+    const bugMessage = {
+      id: Date.now(),
+      type: 'bug',
+      description: bugDescription,
+      targetFile: targetFileHint,
+      image: imagePreview,
+    }
+    setConversationHistory(prev => [...prev, bugMessage])
+
+    // Start loading
     setCurrentState('LOADING_RESULTS')
 
     try {
@@ -133,7 +167,11 @@ function App() {
       }
       
       formData.append('bug_description', finalDescription)
-      formData.append('screenshot', uploadedFile)
+      
+      // Only append screenshot if one was uploaded
+      if (uploadedFile) {
+        formData.append('screenshot', uploadedFile)
+      }
 
       console.log('🔍 Attempting diagnosis fetch from:', 'http://localhost:8000/api/diagnose')
 
@@ -153,20 +191,45 @@ function App() {
       const data = await response.json()
       console.log('Diagnosis response:', data)
 
-      if (data.candidates && data.candidates.length > 0) {
-        setDiagnosticResults(data.candidates)
-        setAlphaWeights({
+      // Add result to conversation
+      const resultMessage = {
+        id: Date.now() + 1,
+        type: 'result',
+        candidates: data.candidates || [],
+        alphaWeights: {
           text: Math.round((data.alpha_text || 0.5) * 100),
           visual: Math.round((data.alpha_visual || 0.5) * 100),
-        })
+        },
       }
+      setConversationHistory(prev => [...prev, resultMessage])
 
-      setCurrentState('RESULTS')
+      setDiagnosticResults(data.candidates || [])
+      setAlphaWeights({
+        text: Math.round((data.alpha_text || 0.5) * 100),
+        visual: Math.round((data.alpha_visual || 0.5) * 100),
+      })
+
+      // Clear form
+      setBugDescription('')
+      setTargetFileHint('')
+      setUploadedFile(null)
+      setImagePreview(null)
+
+      setCurrentState('QUERY')
+
+      // Scroll to bottom
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
     } catch (error) {
       console.error('❌ Diagnosis error full:', error)
       console.error('   Error type:', error.constructor.name)
       console.error('   Error message:', error.message)
       alert(`Diagnosis failed: ${error.message}\n\nMake sure the backend is running on http://localhost:8000`)
+      
+      // Remove the bug message from history on error
+      setConversationHistory(prev => prev.slice(0, -1))
+      
       setCurrentState('QUERY')
     }
   }
@@ -177,17 +240,22 @@ function App() {
     setTargetFileHint('')
     setUploadedFile(null)
     setImagePreview(null)
+    setConversationHistory([])
+    setDiagnosticResults([])
   }
 
   const handleChangeRepository = () => {
     setRepositoryIndexed(false)
     setIndexedRepoName('')
+    setIndexedBranchName('')
     setRepositoryUrl('')
     setIndexedFiles([])
     setBugDescription('')
     setTargetFileHint('')
     setUploadedFile(null)
     setImagePreview(null)
+    setConversationHistory([])
+    setDiagnosticResults([])
   }
 
   const handleDrag = (e) => {
@@ -252,6 +320,7 @@ function App() {
           setRepositoryUrl={setRepositoryUrl}
           repositoryIndexed={repositoryIndexed}
           indexedRepoName={indexedRepoName}
+          indexedBranchName={indexedBranchName}
           bugDescription={bugDescription}
           setBugDescription={setBugDescription}
           targetFileHint={targetFileHint}
@@ -268,6 +337,8 @@ function App() {
           onFileSelect={handleFileSelect}
           darkMode={darkMode}
           setDarkMode={setDarkMode}
+          conversationHistory={conversationHistory}
+          chatEndRef={chatEndRef}
         />
       )}
 
@@ -429,6 +500,7 @@ function QueryState({
   setRepositoryUrl,
   repositoryIndexed,
   indexedRepoName,
+  indexedBranchName,
   bugDescription,
   setBugDescription,
   targetFileHint,
@@ -445,6 +517,8 @@ function QueryState({
   onFileSelect,
   darkMode,
   setDarkMode,
+  conversationHistory = [],
+  chatEndRef,
 }) {
   return (
     <div className={`min-h-screen flex flex-col ${
@@ -458,7 +532,7 @@ function QueryState({
           </h1>
           {repositoryIndexed && (
             <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'} truncate`}>
-              📦 Indexed: {indexedRepoName}
+              📦 {indexedRepoName} {indexedBranchName && `- ${indexedBranchName} branch`}
             </p>
           )}
         </div>
@@ -502,120 +576,239 @@ function QueryState({
         </div>
       </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-3 pt-4 flex items-center justify-center">
-        <div className="text-center max-w-sm mx-auto w-full">
-          {!repositoryIndexed ? (
-            <>
-              <div className="text-4xl mb-2">🔗</div>
-              <h2 className={`text-xl font-semibold mb-1 ${
-                darkMode ? 'text-white' : 'text-slate-900'
-              }`}>
-                Index a Repository
-              </h2>
-              <p className={`text-sm mb-6 ${
-                darkMode ? 'text-slate-400' : 'text-slate-600'
-              }`}>
-                Enter a GitHub URL to get started
-              </p>
-              
-              {/* Form moved here */}
-              <div className="space-y-2">
-                <div>
-                  <div className={`flex items-center gap-2 text-xs font-semibold mb-1 ${
-                    darkMode ? 'text-slate-300' : 'text-slate-700'
-                  }`}>
-                    <span>GitHub Repository URL <span className="text-red-500">*</span></span>
-                  </div>
-                  <input
-                    type="text"
-                    value={repositoryUrl}
-                    onChange={(e) => setRepositoryUrl(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        onIndexRepository()
-                      }
-                    }}
-                    placeholder="e.g., https://github.com/user/repo"
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent text-sm transition-colors ${
-                      darkMode
-                        ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500'
-                        : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
-                    }`}
-                  />
-                </div>
-
-                <button
-                  onClick={onIndexRepository}
-                  disabled={!repositoryUrl.trim()}
-                  className={`w-full font-medium py-2 rounded-lg text-sm transition-all ${
-                    !repositoryUrl.trim()
-                      ? 'bg-indigo-600 text-white opacity-50 cursor-not-allowed'
-                      : darkMode
-                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                        : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                  }`}
-                >
-                  Index Repository
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="text-4xl mb-2">🐛</div>
-              <h2 className={`text-xl font-semibold mb-1 ${
-                darkMode ? 'text-white' : 'text-slate-900'
-              }`}>
-                Report a Bug
-              </h2>
-              <p className={`text-sm ${
-                darkMode ? 'text-slate-400' : 'text-slate-600'
-              }`}>
-                Describe the issue and upload a screenshot
-              </p>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Input Area (Sticky at bottom) - Only for bug reporting */}
-      {repositoryIndexed && (
-      <div className={`border-t ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200'} p-3`}>
-        <div className="max-w-3xl mx-auto space-y-2">
-          <div>
-            <div className={`flex items-center gap-2 text-xs font-semibold mb-1 ${
-              darkMode ? 'text-slate-300' : 'text-slate-700'
+      {/* Chat Area - Conversation History */}
+      {!repositoryIndexed ? (
+        // Repository indexing form
+        <div className="flex-1 overflow-y-auto p-3 pt-4 flex items-center justify-center">
+          <div className="text-center max-w-sm mx-auto w-full">
+            <div className="text-4xl mb-2">🔗</div>
+            <h2 className={`text-xl font-semibold mb-1 ${
+              darkMode ? 'text-white' : 'text-slate-900'
             }`}>
-              <span>Bug Description <span className="text-red-500">*</span></span>
-            </div>
-            <textarea
-              value={bugDescription}
-              onChange={(e) => setBugDescription(e.target.value)}
-              placeholder="What's the bug? (e.g., 'Button doesn't respond to clicks on mobile')"
-              rows="2"
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent resize-none text-sm transition-colors ${
-                darkMode
-                  ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500'
-                  : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
-              }`}
-            />
-          </div>
+              Index a Repository
+            </h2>
+            <p className={`text-sm mb-6 ${
+              darkMode ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              Enter a GitHub URL to get started
+            </p>
+            
+            {/* Form moved here */}
+            <div className="space-y-2">
+              <div>
+                <div className={`flex items-center gap-2 text-xs font-semibold mb-1 ${
+                  darkMode ? 'text-slate-300' : 'text-slate-700'
+                }`}>
+                  <span>GitHub Repository URL <span className="text-red-500">*</span></span>
+                </div>
+                <input
+                  type="text"
+                  value={repositoryUrl}
+                  onChange={(e) => setRepositoryUrl(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      onIndexRepository()
+                    }
+                  }}
+                  placeholder="e.g., https://github.com/user/repo"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent text-sm transition-colors ${
+                    darkMode
+                      ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500'
+                      : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                  }`}
+                />
+              </div>
 
-          {/* File dropdown + Image Upload (side by side) */}
-          <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={onIndexRepository}
+                disabled={!repositoryUrl.trim()}
+                className={`w-full font-medium py-2 rounded-lg text-sm transition-all ${
+                  !repositoryUrl.trim()
+                    ? 'bg-indigo-600 text-white opacity-50 cursor-not-allowed'
+                    : darkMode
+                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                }`}
+              >
+                Index Repository
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // Conversation history display
+        <>
+          {conversationHistory.length === 0 ? (
+            // "Report a Bug" prompt - centered in middle of screen when no conversation
+            <div className="flex-1 flex items-center justify-center p-4">
+              <div className="text-center">
+                <div className="text-6xl mb-4">🐛</div>
+                <h2 className={`text-2xl font-semibold mb-2 ${
+                  darkMode ? 'text-white' : 'text-slate-900'
+                }`}>
+                  Report a Bug
+                </h2>
+                <p className={`text-sm ${
+                  darkMode ? 'text-slate-400' : 'text-slate-600'
+                }`}>
+                  Describe the issue and upload a screenshot below
+                </p>
+              </div>
+            </div>
+          ) : (
+            // Display conversation items
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="max-w-2xl mx-auto space-y-4">
+              {conversationHistory.map((item) => (
+                <div key={item.id}>
+                  {item.type === 'bug' && (
+                    <div className={`p-4 rounded-lg ${
+                      darkMode
+                        ? 'bg-slate-800/50 border border-slate-700'
+                        : 'bg-slate-100 border border-slate-200'
+                    }`}>
+                      <h3 className={`text-sm font-semibold mb-2 flex items-center gap-2 ${
+                        darkMode ? 'text-slate-200' : 'text-slate-900'
+                      }`}>
+                        <span>📝 Your Bug Report</span>
+                      </h3>
+                      <p className={`text-sm break-words whitespace-pre-wrap ${
+                        darkMode ? 'text-slate-300' : 'text-slate-700'
+                      }`}>
+                        {item.description}
+                      </p>
+                      {item.targetFile && (
+                        <p className={`text-xs mt-2 ${
+                          darkMode ? 'text-slate-400' : 'text-slate-600'
+                        }`}>
+                          📄 File: <span className="font-mono">{item.targetFile}</span>
+                        </p>
+                      )}
+                      {item.image && (
+                        <div className="mt-2">
+                          <img 
+                            src={item.image} 
+                            alt="Bug screenshot" 
+                            className="max-w-xs max-h-40 rounded border border-slate-600"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {item.type === 'result' && (
+                    <div className={`p-4 rounded-lg ml-8 ${
+                      darkMode
+                        ? 'bg-indigo-900/20 border border-indigo-700/50'
+                        : 'bg-indigo-50 border border-indigo-200'
+                    }`}>
+                      <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${
+                        darkMode ? 'text-indigo-200' : 'text-indigo-900'
+                      }`}>
+                        <span>✨ Analysis Result</span>
+                      </h3>
+                      
+                      {item.candidates && item.candidates.length > 0 ? (
+                        <div className="space-y-3">
+                          {item.candidates.slice(0, 3).map((candidate, idx) => (
+                            <div key={idx} className={`p-3 rounded text-sm ${
+                              darkMode
+                                ? 'bg-slate-800/50 border border-slate-700/50'
+                                : 'bg-white border border-slate-200'
+                            }`}>
+                              <p className={`font-semibold mb-1 flex items-center gap-2 ${
+                                darkMode ? 'text-slate-200' : 'text-slate-900'
+                              }`}>
+                                <span>🎯</span> {candidate.name || 'Unknown'}
+                              </p>
+                              {candidate.explanation && (
+                                <p className={`text-xs break-words ${
+                                  darkMode ? 'text-slate-400' : 'text-slate-600'
+                                }`}>
+                                  {candidate.explanation}
+                                </p>
+                              )}
+                              {candidate.confidence && (
+                                <p className={`text-xs mt-1 ${
+                                  darkMode ? 'text-slate-500' : 'text-slate-500'
+                                }`}>
+                                  Confidence: {Math.round(candidate.confidence * 100)}%
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                          {item.candidates.length > 3 && (
+                            <p className={`text-xs ${
+                              darkMode ? 'text-slate-500' : 'text-slate-600'
+                            }`}>
+                              ... and {item.candidates.length - 3} more candidates
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className={`text-xs ${
+                          darkMode ? 'text-slate-400' : 'text-slate-600'
+                        }`}>
+                          No candidates found for this bug.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+              </div>
+            </div>
+            )}
+        </>
+      )}
+
+      {/* Input Area - Compact Bug Report Form */}
+      {repositoryIndexed && (
+      <div className={`border-t transition-colors ${darkMode ? 'border-slate-700 bg-slate-900/50' : 'border-slate-200 bg-slate-50/50'} px-4 py-3`}>
+        <div className="max-w-2xl mx-auto">
+          {/* Form Card Container - Compact */}
+          <div className={`rounded-lg p-4 transition-colors ${
+            darkMode 
+              ? 'bg-slate-800/60 border border-slate-700/50' 
+              : 'bg-white border border-slate-200/50 shadow-sm'
+          }`}>
+            <div className="space-y-3">
+              {/* Bug Description */}
+              <div>
+                <label className={`text-xs font-semibold block mb-1.5 ${
+                  darkMode ? 'text-slate-300' : 'text-slate-700'
+                }`}>
+                  📝 Describe the bug <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={bugDescription}
+                  onChange={(e) => setBugDescription(e.target.value)}
+                  placeholder="What's the bug?"
+                  rows="2"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent resize-none text-xs transition-all ${
+                    darkMode
+                      ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-500'
+                      : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                  }`}
+                />
+              </div>
+
+              {/* File dropdown + Image Upload (side by side) */}
+              <div className="grid grid-cols-2 gap-3">
                 {/* File Hint Dropdown */}
                 <div>
-                  <div className={`text-xs font-semibold mb-1 ${
+                  <label className={`text-xs font-semibold block mb-1 ${
                     darkMode ? 'text-slate-400' : 'text-slate-600'
                   }`}>
-                    Target File <span className="text-slate-500">(optional)</span>
-                  </div>
+                    🗂️ File (optional)
+                  </label>
                   <select
                     value={targetFileHint}
                     onChange={(e) => setTargetFileHint(e.target.value)}
-                    className={`w-full px-2 py-1 border rounded text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+                    className={`w-full px-2 py-1.5 border rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent transition-all ${
                       darkMode
-                        ? 'bg-slate-700 border-slate-600 text-white'
+                        ? 'bg-slate-700/50 border-slate-600 text-white'
                         : 'bg-slate-50 border-slate-300 text-slate-900'
                     }`}
                   >
@@ -629,23 +822,23 @@ function QueryState({
 
                 {/* Image Upload */}
                 <div>
-                  <div className={`text-xs font-semibold mb-1 ${
+                  <label className={`text-xs font-semibold block mb-1 ${
                     darkMode ? 'text-slate-400' : 'text-slate-600'
                   }`}>
-                    Screenshot <span className="text-slate-500">(optional)</span>
-                  </div>
+                    📸 Screenshot (optional)
+                  </label>
                   <div
                     onDragEnter={onDrag}
                     onDragLeave={onDrag}
                     onDragOver={onDrag}
                     onDrop={onDrop}
-                    className={`border rounded cursor-pointer p-1.5 text-center text-xs transition-all ${
+                    className={`border border-dashed rounded cursor-pointer p-1.5 text-center text-xs transition-all ${
                       dragActive
                         ? darkMode
                           ? 'border-indigo-400 bg-indigo-900/20'
                           : 'border-indigo-500 bg-indigo-50'
                         : darkMode
-                          ? 'border-slate-600 bg-slate-700/30'
+                          ? 'border-slate-600 bg-slate-700/10'
                           : 'border-slate-300 bg-slate-50'
                     }`}
                   >
@@ -654,7 +847,7 @@ function QueryState({
                         <img 
                           src={imagePreview} 
                           alt="Screenshot" 
-                          className="w-full h-10 object-cover rounded mb-0.5"
+                          className="w-full h-12 object-cover rounded mb-1"
                         />
                         <input
                           type="file"
@@ -665,9 +858,9 @@ function QueryState({
                         />
                         <label
                           htmlFor="fileInput"
-                          className="text-xs block text-indigo-600 hover:text-indigo-700 cursor-pointer"
+                          className="text-xs text-indigo-500 hover:text-indigo-600 cursor-pointer block"
                         >
-                          Change
+                          Replace
                         </label>
                       </div>
                     ) : (
@@ -681,30 +874,40 @@ function QueryState({
                         />
                         <label
                           htmlFor="fileInput"
-                          className="text-xs block cursor-pointer text-slate-500 hover:text-slate-700"
+                          className={`block cursor-pointer ${
+                            dragActive
+                              ? darkMode
+                                ? 'text-indigo-300'
+                                : 'text-indigo-600'
+                              : darkMode
+                                ? 'text-slate-400 hover:text-slate-300'
+                                : 'text-slate-500 hover:text-slate-700'
+                          }`}
                         >
-                          📷 Upload
+                          {dragActive ? '✓ Drop' : 'Upload'}
                         </label>
                       </div>
                     )}
                   </div>
                 </div>
-            </div>
+              </div>
 
-          {/* Analyze Button */}
-          <button
-            onClick={onDiagnoseBug}
-            disabled={!bugDescription.trim()}
-            className={`w-full font-medium py-2 rounded-lg text-sm transition-all ${
-              !bugDescription.trim()
-                ? 'bg-indigo-600 text-white opacity-50 cursor-not-allowed'
-                : darkMode
-                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-            }`}
-          >
-            Analyze Bug
-          </button>
+              {/* Analyze Button */}
+              <button
+                onClick={onDiagnoseBug}
+                disabled={!bugDescription.trim()}
+                className={`w-full font-semibold py-2 px-3 rounded-lg text-sm transition-all ${
+                  !bugDescription.trim()
+                    ? `${darkMode ? 'bg-indigo-600/40' : 'bg-indigo-500/40'} text-slate-400 cursor-not-allowed opacity-60`
+                    : darkMode
+                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                }`}
+              >
+                🔍 Analyze Bug
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       )}
