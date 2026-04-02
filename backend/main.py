@@ -18,7 +18,9 @@ try:
     from ms2c import MS2CRetriever as CustomRetriever
     PYTORCH_AVAILABLE = True
     print("✅ PyTorch and CodeBERT models available")
-except (ImportError, OSError) as e:
+except Exception as e:
+    import traceback
+    traceback.print_exc()
     print(f"⚠️  PyTorch import error: {e}")
     print("🔧 Running in mock mode - responses will use keyword-based ranking\n")
     PYTORCH_AVAILABLE = False
