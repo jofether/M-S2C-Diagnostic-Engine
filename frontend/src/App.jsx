@@ -928,7 +928,7 @@ function QueryState({
                 return (
                   <div key={bugItem.id} className={`grid gap-4 ${hasResult ? 'grid-cols-2' : 'grid-cols-1'}`}>
                       {/* Left side: Bug details */}
-                      <div className={`p-4 rounded-lg ${
+                      <div className={`p-4 rounded-lg flex flex-col max-h-96 overflow-y-auto ${
                         darkMode
                           ? 'bg-slate-800/50 border border-slate-700'
                           : 'bg-slate-100 border border-slate-200'
@@ -951,11 +951,11 @@ function QueryState({
                           </p>
                         )}
                         {bugItem.image && (
-                          <div className="mt-3">
+                          <div className="mt-3 max-h-40 overflow-hidden rounded">
                             <img 
                               src={bugItem.image} 
                               alt="Bug screenshot" 
-                              className="w-full rounded border border-slate-600"
+                              className="w-full h-full object-cover rounded border border-slate-600"
                             />
                           </div>
                         )}
