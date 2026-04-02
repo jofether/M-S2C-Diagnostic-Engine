@@ -249,7 +249,7 @@ def setup_routes(app, retriever, pytorch_available):
                     top_results, alpha_val = retriever.retrieve_top_k(
                         text_query=bug_description,
                         image_path=temp_image_path if os.path.exists(temp_image_path) else None,
-                        k=3,
+                        k=10,
                         mode="multimodal",
                         scope="file"
                     )
