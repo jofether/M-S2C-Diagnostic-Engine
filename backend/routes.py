@@ -356,22 +356,27 @@ def setup_routes(app, retriever, pytorch_available):
                             if len(results) >= 10:  # Stop once we have 10
                                 break
                             try:
-                                # Extract filename
+                                # Extract filename and line numbers
                                 import re
-                                file_name = file_path.split('/')[-1]
                                 
-                                # Extract line numbers if present in filename (e.g., "App.jsx (L:50-75)")
+                                # Extract line numbers if present (e.g., "components/App.jsx (L:50-75)")
                                 line_match = re.search(r'\(L:(\d+)(?:-(\d+))?\)', file_path)
                                 if line_match:
                                     start = line_match.group(1)
                                     end = line_match.group(2) or start
                                     lines = f"{start}-{end}"
+                                    # Remove line numbers from file_path for clean display
+                                    clean_file_path = re.sub(r'\s*\(L:\d+(?:-\d+)?\)', '', file_path)
                                 else:
                                     lines = "?"
+                                    clean_file_path = file_path
+                                
+                                # Extract filename from clean path
+                                file_name = clean_file_path.split('/')[-1]
                                 
                                 formatted_result = {
                                     "name": file_name,
-                                    "file": file_path,
+                                    "file": clean_file_path,
                                     "lines": lines,
                                     "code": snippet.strip(),
                                     "explanation": f"Found in {file_name} - relevant code snippet",

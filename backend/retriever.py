@@ -203,9 +203,12 @@ class MS2CRetriever:
         for file_path, nodes in index_dict.items():
             for node_dict in nodes:
                 code_text = node_dict.get("code_snippet", "")
+                line_number = node_dict.get("line_number", "?")
+                # Store file_path with line number for display
+                file_with_line = f"{file_path} (L:{line_number})" if line_number != "?" else file_path
                 all_code_snippets.append(code_text)
-                code_to_metadata.append((file_path, code_text))
-                self.global_corpus.append((file_path, code_text))
+                code_to_metadata.append((file_with_line, code_text))
+                self.global_corpus.append((file_with_line, code_text))
         
         logger.info(f"   Encoding {len(all_code_snippets)} snippets with batch_size={batch_size}...")
         
