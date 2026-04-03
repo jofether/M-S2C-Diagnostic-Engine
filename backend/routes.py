@@ -282,102 +282,88 @@ def setup_routes(app, retriever, pytorch_available):
                     top_results = []
                     results = []
                     
-                    # If target file is specified, fetch and RANK snippets from target file
+                    # Use semantic search via retriever to get ranked results
+                    print(f"🔍 Performing semantic search on {len(retriever.global_corpus)} snippets...")
+                    logger.info(f"🔍 Performing semantic search on {len(retriever.global_corpus)} snippets...")
+                    
+                    semantic_results, alpha_val = retriever.retrieve_top_k(
+                        text_query=cleaned_query,
+                        target_key=None,
+                        image_path=temp_image_path if os.path.exists(temp_image_path) else None,
+                        k=300,  # Get many results
+                        mode="multimodal",
+                        scope="file"
+                    )
+                    
+                    # If target file is specified, prioritize results from that file
                     if target_file:
-                        print(f"🎯 Fetching and ranking all snippets from target file: {target_file}")
-                        logger.info(f"🎯 Fetching and ranking all snippets from target file: {target_file}")
+                        print(f"🎯 Target file specified: {target_file}")
+                        logger.info(f"🎯 Target file specified: {target_file}")
                         
-                        # Get all snippets from target file from indexed data
-                        target_file_snippets = []
-                        for file_path, snippet in global_indexed_data.items():
-                            if target_file in file_path:
-                                target_file_snippets.append((file_path, snippet))
+                        # Split semantic results into target and non-target
+                        target_results = [r for r in semantic_results if target_file in r[0]]
+                        other_results = [r for r in semantic_results if target_file not in r[0]]
                         
-                        print(f"📊 Found {len(target_file_snippets)} snippets for target file in global_indexed_data")
-                        logger.info(f"📊 Found {len(target_file_snippets)} snippets for target file in global_indexed_data")
+                        print(f"📊 Semantic search returned {len(target_results)} from target file, {len(other_results)} from others")
+                        logger.info(f"📊 Semantic search returned {len(target_results)} from target file, {len(other_results)} from others")
                         
-                        # Score each snippet using the retriever's semantic embedding
-                        if len(target_file_snippets) > 0 and hasattr(retriever, 'global_embeddings') and retriever.global_embeddings is not None:
-                            import torch
-                            with torch.no_grad():
-                                # Encode the query
-                                text_inputs = retriever.text_tokenizer(cleaned_query.lower(), return_tensors="pt", truncation=True, padding="max_length", max_length=128).to(retriever.device)
-                                query_emb = retriever.model.forward_text(text_inputs["input_ids"], text_inputs["attention_mask"])
-                                
-                                # Score each snippet
-                                scored_snippets = []
-                                for file_path, snippet in target_file_snippets:
-                                    # Find this snippet in the global corpus to get its embedding
-                                    for idx, (corpus_file, corpus_snippet) in enumerate(retriever.global_corpus):
-                                        if corpus_file == file_path and corpus_snippet == snippet:
-                                            snippet_emb = retriever.global_embeddings[idx]
-                                            score = torch.matmul(query_emb, snippet_emb.unsqueeze(1)).squeeze().item()
-                                            scored_snippets.append((score, file_path, snippet))
-                                            break
-                                
-                                # Sort by score descending
-                                scored_snippets.sort(key=lambda x: x[0], reverse=True)
-                                
-                                print(f"🎯 Scored and ranked {len(scored_snippets)} snippets from target file")
-                                logger.info(f"🎯 Scored and ranked {len(scored_snippets)} snippets from target file")
-                                
-                                # Take top 10 ranked snippets
-                                top_results = [(f, s) for _, f, s in scored_snippets[:10]]
-                        else:
-                            print(f"⚠️  No embeddings available, using unranked snippets")
-                            logger.info(f"⚠️  No embeddings available, using unranked snippets")
-                            top_results = target_file_snippets[:10]
+                        # Combine: prioritize target file results, then fill with others
+                        combined = target_results[:10]
+                        if len(combined) < 10:
+                            combined.extend(other_results[:10 - len(combined)])
+                        
+                        top_results = combined
                     else:
-                        # No target file specified - use semantic search
-                        semantic_results, alpha_val = retriever.retrieve_top_k(
-                            text_query=cleaned_query,
-                            target_key=None,
-                            image_path=temp_image_path if os.path.exists(temp_image_path) else None,
-                            k=300,
-                            mode="multimodal",
-                            scope="file"
-                        )
+                        # No target file - just use top semantic results
                         top_results = semantic_results[:10]
+                    
+                    print(f"✅ Will display {len(top_results)} results")
+                    logger.info(f"✅ Will display {len(top_results)} results")
                     
                     # Format results from indexed data to match frontend expectations
                     logger.info(f"📤 PROCESSING {len(top_results)} results for display")
                     print(f"📤 PROCESSING {len(top_results)} results for display")
                     
-                    for idx, item in enumerate(top_results):
-                        if len(results) >= 10:  # Stop once we have 10
-                            break
-                        try:
-                            # Unpack tuple (file_path, snippet)
-                            if isinstance(item, tuple) and len(item) >= 2:
-                                file_path, snippet = item[0], item[1]
-                            else:
-                                logger.warning(f"⚠️  Unexpected result format at index {idx}: {type(item)}")
+                    if len(top_results) == 0:
+                        print(f"⚠️  No results from semantic search, attempting fallback...")
+                        logger.warning(f"⚠️  No results from semantic search, attempting fallback...")
+                        results = generate_smart_results(cleaned_query, app_state.indexed_repo_url)
+                    else:
+                        for idx, item in enumerate(top_results):
+                            if len(results) >= 10:  # Stop once we have 10
+                                break
+                            try:
+                                # Unpack tuple (file_path, snippet)
+                                if isinstance(item, tuple) and len(item) >= 2:
+                                    file_path, snippet = item[0], item[1]
+                                else:
+                                    logger.warning(f"⚠️  Unexpected result format at index {idx}: {type(item)}")
+                                    continue
+                                
+                                # Extract filename and line numbers from file_path like "path/file.jsx (Lines X-Y)"
+                                import re
+                                line_match = re.search(r'\(Lines\s+(\d+)-(\d+)\)', file_path)
+                                lines = f"{line_match.group(1)}-{line_match.group(2)}" if line_match else "?"
+                                
+                                # Extract just the filename
+                                file_name = file_path.split('/')[-1].split(' ')[0]
+                                
+                                formatted_result = {
+                                    "name": file_name,
+                                    "file": file_path,
+                                    "lines": lines,
+                                    "code": snippet[:500].strip(),
+                                    "explanation": f"Found in {file_name} - relevant code snippet",
+                                    "confidence": 0.85 + (idx * 0.05)  # Decrease confidence for lower-ranked results
+                                }
+                                results.append(formatted_result)
+                                logger.info(f"   Result {idx+1}: {file_path}")
+                                logger.info(f"   Code preview: {snippet[:100]}...")
+                            except Exception as e:
+                                logger.error(f"❌ Error formatting result {idx}: {e}")
+                                import traceback
+                                traceback.print_exc()
                                 continue
-                            
-                            # Extract filename and line numbers from file_path like "path/file.jsx (Lines X-Y)"
-                            import re
-                            line_match = re.search(r'\(Lines\s+(\d+)-(\d+)\)', file_path)
-                            lines = f"{line_match.group(1)}-{line_match.group(2)}" if line_match else "?"
-                            
-                            # Extract just the filename
-                            file_name = file_path.split('/')[-1].split(' ')[0]
-                            
-                            formatted_result = {
-                                "name": file_name,
-                                "file": file_path,
-                                "lines": lines,
-                                "code": snippet[:500].strip(),
-                                "explanation": f"Found in {file_name} - relevant code snippet",
-                                "confidence": 0.85 + (idx * 0.05)  # Decrease confidence for lower-ranked results
-                            }
-                            results.append(formatted_result)
-                            logger.info(f"   Result {idx+1}: {file_path}")
-                            logger.info(f"   Code preview: {snippet[:100]}...")
-                        except Exception as e:
-                            logger.error(f"❌ Error formatting result {idx}: {e}")
-                            import traceback
-                            traceback.print_exc()
-                            continue
                     
                     print(f"✅ Retrieved {len(results)} results from repository")
                     logger.info(f"✅ Retrieved {len(results)} results from repository")
