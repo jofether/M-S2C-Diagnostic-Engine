@@ -1,251 +1,391 @@
 {
-  "repo_url": "https://github.com/EdrianHernandez/Elite/tree/buggy",
-  "timestamp": "2026-04-04 02:01:05.548741",
+  "repo_url": "https://github.com/EdrianHernandez/PeerMarket/tree/buggy",
+  "timestamp": "2026-04-04 02:57:19.359992",
   "files_indexed": 7,
-  "snippets_indexed": 173,
+  "snippets_indexed": 163,
   "index_dict": {
     "App.jsx": [
       {
         "file_path": "App.jsx",
-        "line_number": 9,
-        "code_snippet": "[1] (L:9) <div className=\"relative min-h-screen\">"
+        "line_number": 41,
+        "code_snippet": "[1] (L:41) <div className=\"min-h-screen flex flex-col\">"
       },
       {
         "file_path": "App.jsx",
-        "line_number": 10,
-        "code_snippet": "[2] (L:10) <Navbar />"
+        "line_number": 42,
+        "code_snippet": "[2] (L:42-46) <MarketplaceHeader searchTerm={searchTerm} onSearch={setSearchTerm} onSellClick={handleSellClick} />"
       },
       {
         "file_path": "App.jsx",
-        "line_number": 12,
-        "code_snippet": "[2] (L:12) <main>"
+        "line_number": 48,
+        "code_snippet": "[2] (L:48-51) <CategoryIcons selectedCategoryId={selectedCategoryId} onSelectCategory={setSelectedCategoryId} />"
       },
       {
         "file_path": "App.jsx",
-        "line_number": 13,
-        "code_snippet": "[3] (L:13) <Hero />"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 16,
-        "code_snippet": "[3] (L:16) <section id=\"about\" className=\"py-24 bg-slate-900 text-white\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 17,
-        "code_snippet": "[4] (L:17) <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 18,
-        "code_snippet": "[5] (L:18) <div className=\"grid grid-cols-1 lg:grid-cols-2 gap-16 items-center\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 19,
-        "code_snippet": "[6] (L:19) <div>"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 20,
-        "code_snippet": "[7] (L:20) <h3 className=\"text-indigo-400 font-bold text-sm uppercase tracking-wider mb-4\"> | [Text: The Developer]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 21,
-        "code_snippet": "[7] (L:21) <h2 className=\"text-4xl font-extrabold mb-8\"> | [Text: Crafting experiences with logic and creativity.]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 22,
-        "code_snippet": "[7] (L:22) <div className=\"space-y-6 text-slate-400 text-lg leading-relaxed\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 23,
-        "code_snippet": "[8] (L:23) <p> | [Text: With over 10 years of experience in full-stack development, I focus on building products that are not only powerful but also intuitive to use.]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 26,
-        "code_snippet": "[8] (L:26) <p> | [Text: I've worked with startups and Fortune 500 companies to deliver high-performance applications, from real-time trading dashboards to complex SaaS platforms.]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 31,
-        "code_snippet": "[7] (L:31) <div className=\"grid grid-cols-2 gap-8 mt-12\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 32,
-        "code_snippet": "[8] (L:32) <div>"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 33,
-        "code_snippet": "[9] (L:33) <div className=\"text-3xl font-black text-white mb-2\"> | [Text: 120+]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 34,
-        "code_snippet": "[9] (L:34) <div className=\"text-xs font-bold text-indigo-400 uppercase tracking-widest\"> | [Text: Projects Completed]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 36,
-        "code_snippet": "[8] (L:36) <div>"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 37,
-        "code_snippet": "[9] (L:37) <div className=\"text-3xl font-black text-white mb-2\"> | [Text: 10+]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 38,
-        "code_snippet": "[9] (L:38) <div className=\"text-xs font-bold text-indigo-400 uppercase tracking-widest\"> | [Text: Years Experience]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 43,
-        "code_snippet": "[6] (L:43) <div className=\"grid grid-cols-2 gap-4\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 44,
-        "code_snippet": "[7] (L:44) <div className=\"space-y-4\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 45,
-        "code_snippet": "[8] (L:45) <div className=\"bg-slate-800 p-8 rounded-[2rem] border border-slate-700\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 46,
-        "code_snippet": "[9] (L:46) <h4 className=\"text-white font-bold mb-2\"> | [Text: Frontend]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 47,
-        "code_snippet": "[9] (L:47) <p className=\"text-slate-400 text-sm\"> | [Text: React, Next.js, JavaScript, Tailwind, Three.js]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 49,
-        "code_snippet": "[8] (L:49) <div className=\"bg-indigo-600 p-8 rounded-[2rem] text-white\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 50,
-        "code_snippet": "[9] (L:50) <h4 className=\"font-bold mb-2\"> | [Text: Backend]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 51,
-        "code_snippet": "[9] (L:51) <p className=\"text-indigo-100 text-sm\"> | [Text: Node.js, GraphQL, PostgreSQL, Redis]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 54,
-        "code_snippet": "[7] (L:54) <div className=\"space-y-4 pt-8\">"
+        "line_number": 53,
+        "code_snippet": "[2] (L:53) <main className=\"flex-grow max-w-7xl mx-auto px-4 w-full\">"
       },
       {
         "file_path": "App.jsx",
         "line_number": 55,
-        "code_snippet": "[8] (L:55) <div className=\"bg-slate-800 p-8 rounded-[2rem] border border-slate-700\">"
+        "code_snippet": "[3] (L:55) <div className=\"mt-8 mb-4 p-6 bg-gradient-to-r from-indigo-600 to-blue-500 rounded-2xl shadow-lg relative overflow-hidden\">"
       },
       {
         "file_path": "App.jsx",
         "line_number": 56,
-        "code_snippet": "[9] (L:56) <h4 className=\"text-white font-bold mb-2\"> | [Text: Tools]"
+        "code_snippet": "[4] (L:56) <div className=\"relative z-10 max-w-lg\">"
       },
       {
         "file_path": "App.jsx",
         "line_number": 57,
-        "code_snippet": "[9] (L:57) <p className=\"text-slate-400 text-sm\"> | [Text: Docker, Kubernetes, AWS, Terraform]"
+        "code_snippet": "[5] (L:57) <h2 className=\"text-[8px] md:text-xs font-bold text-white mb-2\"> | [Text: Buy and sell in your neighborhood]"
       },
       {
         "file_path": "App.jsx",
-        "line_number": 59,
-        "code_snippet": "[8] (L:59) <div className=\"bg-slate-800 p-8 rounded-[2rem] border border-slate-700\">"
+        "line_number": 58,
+        "code_snippet": "[5] (L:58) <p className=\"text-indigo-100 text-[6px] md:text-xs\"> | [Text: Find great deals on electronics, furniture, vehicles and more from local sellers you can trust.]"
       },
       {
         "file_path": "App.jsx",
         "line_number": 60,
-        "code_snippet": "[9] (L:60) <h4 className=\"text-white font-bold mb-2\"> | [Text: Design]"
+        "code_snippet": "[4] (L:60) <div className=\"absolute right-0 top-0 h-full w-1/3 opacity-10 flex items-center justify-center transform translate-x-1/4\">"
       },
       {
         "file_path": "App.jsx",
         "line_number": 61,
-        "code_snippet": "[9] (L:61) <p className=\"text-slate-400 text-sm\"> | [Text: Figma, Adobe CC, UI/UX Strategy]"
+        "code_snippet": "[5] (L:61) <span className=\"text-9xl\"> | [Text: \ud83d\udecd\ufe0f]"
       },
       {
         "file_path": "App.jsx",
-        "line_number": 69,
-        "code_snippet": "[3] (L:69) <Projects />"
+        "line_number": 66,
+        "code_snippet": "[3] (L:66) <div className=\"flex items-center justify-between mb-2 mt-8\">"
       },
       {
         "file_path": "App.jsx",
-        "line_number": 70,
-        "code_snippet": "[3] (L:70) <Contact />"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 73,
-        "code_snippet": "[2] (L:73) <footer className=\"py-12 border-t border-slate-100 bg-white\">"
+        "line_number": 67,
+        "code_snippet": "[4] (L:67) <h2 className=\"text-xl font-bold text-gray-900\">"
       },
       {
         "file_path": "App.jsx",
         "line_number": 74,
-        "code_snippet": "[3] (L:74) <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">"
+        "code_snippet": "[4] (L:74) <div className=\"flex items-center text-sm text-indigo-600 font-medium cursor-pointer hover:underline\">"
       },
       {
         "file_path": "App.jsx",
         "line_number": 75,
-        "code_snippet": "[4] (L:75) <div className=\"flex flex-col md:flex-row justify-between items-center gap-8\">"
+        "code_snippet": "[5] (L:75) <span> | [Text: Filter]"
       },
       {
         "file_path": "App.jsx",
         "line_number": 76,
-        "code_snippet": "[5] (L:76) <div>"
+        "code_snippet": "[5] (L:76) <svg className=\"w-4 h-4 ml-1\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">"
       },
       {
         "file_path": "App.jsx",
         "line_number": 77,
-        "code_snippet": "[6] (L:77) <span className=\"text-2xl font-black tracking-tighter text-indigo-600\"> | [Text: ELITE.]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 79,
-        "code_snippet": "[5] (L:79) <div className=\"flex gap-8\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 80,
-        "code_snippet": "[6] (L:80) <a href=\"#\" className=\"text-sm font-bold text-slate-500 hover:text-indigo-600\"> | [Text: Dribbble]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 81,
-        "code_snippet": "[6] (L:81) <a href=\"#\" className=\"text-sm font-bold text-slate-500 hover:text-indigo-600\"> | [Text: LinkedIn]"
+        "code_snippet": "[6] (L:77) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth=\"2\" d=\"M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z\" />"
       },
       {
         "file_path": "App.jsx",
         "line_number": 82,
-        "code_snippet": "[6] (L:82) <a href=\"#\" className=\"text-sm font-bold text-slate-500 hover:text-indigo-600\"> | [Text: Twitter]"
+        "code_snippet": "[3] (L:82) <ProductGrid products={filteredProducts} />"
       },
       {
         "file_path": "App.jsx",
-        "line_number": 84,
-        "code_snippet": "[5] (L:84) <p className=\"text-slate-400 text-sm font-medium\"> | [Text: &copy; Elite Portfolio. All rights reserved.]"
+        "line_number": 85,
+        "code_snippet": "[2] (L:85) <footer className=\"bg-white border-t border-gray-200 py-10 mt-20\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 86,
+        "code_snippet": "[3] (L:86) <div className=\"max-w-7xl mx-auto px-4\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 87,
+        "code_snippet": "[4] (L:87) <div className=\"grid grid-cols-2 md:grid-cols-4 gap-8\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 88,
+        "code_snippet": "[5] (L:88) <div>"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 89,
+        "code_snippet": "[6] (L:89) <h4 className=\"font-bold text-gray-900 mb-4\"> | [Text: Marketplace]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 90,
+        "code_snippet": "[6] (L:90) <ul className=\"text-sm text-gray-500 space-y-2\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 91,
+        "code_snippet": "[7] (L:91) <li className=\"hover:text-indigo-600 cursor-pointer\"> | [Text: Local Listings]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 92,
+        "code_snippet": "[7] (L:92) <li className=\"hover:text-indigo-600 cursor-pointer\"> | [Text: Categories]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 93,
+        "code_snippet": "[7] (L:93) <li className=\"hover:text-indigo-600 cursor-pointer\"> | [Text: Buyer Protection]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 96,
+        "code_snippet": "[5] (L:96) <div>"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 97,
+        "code_snippet": "[6] (L:97) <h4 className=\"font-bold text-gray-900 mb-4\"> | [Text: Sell]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 98,
+        "code_snippet": "[6] (L:98) <ul className=\"text-sm text-gray-500 space-y-2\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 99,
+        "code_snippet": "[7] (L:99) <li className=\"hover:text-indigo-600 cursor-pointer\"> | [Text: Create Listing]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 100,
+        "code_snippet": "[7] (L:100) <li className=\"hover:text-indigo-600 cursor-pointer\"> | [Text: Selling Tips]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 101,
+        "code_snippet": "[7] (L:101) <li className=\"hover:text-indigo-600 cursor-pointer\"> | [Text: Fees & Payments]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 104,
+        "code_snippet": "[5] (L:104) <div>"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 105,
+        "code_snippet": "[6] (L:105) <h4 className=\"font-bold text-gray-900 mb-4\"> | [Text: Support]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 106,
+        "code_snippet": "[6] (L:106) <ul className=\"text-sm text-gray-500 space-y-2\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 107,
+        "code_snippet": "[7] (L:107) <li className=\"hover:text-indigo-600 cursor-pointer\"> | [Text: Help Center]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 108,
+        "code_snippet": "[7] (L:108) <li className=\"hover:text-indigo-600 cursor-pointer\"> | [Text: Trust & Safety]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 109,
+        "code_snippet": "[7] (L:109) <li className=\"hover:text-indigo-600 cursor-pointer\"> | [Text: Contact Us]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 112,
+        "code_snippet": "[5] (L:112) <div>"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 113,
+        "code_snippet": "[6] (L:113) <h4 className=\"font-bold text-gray-900 mb-4\"> | [Text: Legal]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 114,
+        "code_snippet": "[6] (L:114) <ul className=\"text-sm text-gray-500 space-y-2\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 115,
+        "code_snippet": "[7] (L:115) <li className=\"hover:text-indigo-600 cursor-pointer\"> | [Text: Terms of Service]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 116,
+        "code_snippet": "[7] (L:116) <li className=\"hover:text-indigo-600 cursor-pointer\"> | [Text: Privacy Policy]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 117,
+        "code_snippet": "[7] (L:117) <li className=\"hover:text-indigo-600 cursor-pointer\"> | [Text: Ad Choices]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 121,
+        "code_snippet": "[4] (L:121) <div className=\"mt-10 pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-400\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 122,
+        "code_snippet": "[5] (L:122) <p> | [Text: &copy; 2024 PeerMarket Inc. All rights reserved.]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 123,
+        "code_snippet": "[5] (L:123) <div className=\"flex items-center space-x-4\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 124,
+        "code_snippet": "[6] (L:124) <span> | [Text: English (US)]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 125,
+        "code_snippet": "[6] (L:125) <span> | [Text: USD]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 133,
+        "code_snippet": "[2] (L:133) <div className=\"fixed inset-0 z-[100] flex items-center justify-center p-4\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 134,
+        "code_snippet": "[3] (L:134) <div className=\"absolute inset-0 bg-black/50 backdrop-blur-sm\" onClick={() => setIsSellModalOpen(false)}>"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 135,
+        "code_snippet": "[3] (L:135) <div className=\"bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in slide-in-from-bottom-4 duration-300\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 136,
+        "code_snippet": "[4] (L:136) <div className=\"p-6\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 137,
+        "code_snippet": "[5] (L:137) <div className=\"flex items-center justify-between mb-6\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 138,
+        "code_snippet": "[6] (L:138) <h3 className=\"text-xl font-bold\"> | [Text: List an Item]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 139,
+        "code_snippet": "[6] (L:139) <button onClick={() => setIsSellModalOpen(false)} className=\"text-gray-400 hover:text-gray-600 p-1\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 140,
+        "code_snippet": "[7] (L:140) <svg className=\"w-6 h-6\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 141,
+        "code_snippet": "[8] (L:141) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth=\"2\" d=\"M6 18L18 6M6 6l12 12\" />"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 145,
+        "code_snippet": "[5] (L:145) <SellItemForm onCancel={() => setIsSellModalOpen(false)} />"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 170,
+        "code_snippet": "[1] (L:170) <div className=\"space-y-4\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 171,
+        "code_snippet": "[2] (L:171) <div>"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 172,
+        "code_snippet": "[3] (L:172) <label className=\"block text-sm font-medium text-gray-700 mb-1\"> | [Text: What are you selling?]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 173,
+        "code_snippet": "[3] (L:173-179) <input type=\"text\" placeholder=\"e.g. iPhone 13 Pro Max, used\" className=\"w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none\" value={title} onChange={(e) => setTitle(e.target.value)} />"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 181,
+        "code_snippet": "[2] (L:181) <div>"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 182,
+        "code_snippet": "[3] (L:182) <label className=\"block text-sm font-medium text-gray-700 mb-1\"> | [Text: Category]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 183,
+        "code_snippet": "[3] (L:183-187) <select className=\"w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none\" value={category} onChange={(e) => setCategory(e.target.value)} >"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 188,
+        "code_snippet": "[4] (L:188) <option key={c.id} value={c.name}>"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 191,
+        "code_snippet": "[2] (L:191) <div>"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 192,
+        "code_snippet": "[3] (L:192) <div className=\"flex items-center justify-between mb-1\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 193,
+        "code_snippet": "[4] (L:193) <label className=\"block text-sm font-medium text-gray-700\"> | [Text: Description]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 194,
+        "code_snippet": "[4] (L:194-199) <button type=\"button\" onClick={handleGenerateDescription} disabled={isGenerating || !title} className={`text-xs flex items-center ${isGenerating || !title ? 'text-gray-400' : 'text-indigo-600 hover:text-indigo-800 font-semibold'}`} >"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 203,
+        "code_snippet": "[3] (L:203-209) <textarea rows={4} placeholder=\"Tell buyers about your item...\" className=\"w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none\" value={description} onChange={(e) => setDescription(e.target.value)} >"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 211,
+        "code_snippet": "[2] (L:211) <div className=\"pt-2 flex gap-3\">"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 212,
+        "code_snippet": "[3] (L:212-215) <button onClick={onCancel} className=\"flex-1 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors\" > | [Text: Cancel]"
+      },
+      {
+        "file_path": "App.jsx",
+        "line_number": 218,
+        "code_snippet": "[3] (L:218-224) <button className=\"flex-1 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors\" onClick={() => { alert(\"This is a demo. In a real app, your item would be listed!\"); onCancel(); }} > | [Text: List Item]"
       }
     ],
     "index.html": [
       {
         "file_path": "index.html",
         "line_number": 3,
-        "code_snippet": "[1] (L:3) <html lang=\"en\" class=\"scroll-smooth\">"
+        "code_snippet": "[1] (L:3) <html lang=\"en\">"
       },
       {
         "file_path": "index.html",
@@ -265,7 +405,7 @@
       {
         "file_path": "index.html",
         "line_number": 7,
-        "code_snippet": "[3] (L:7) <title> | [Text: Elite Portfolio | Senior Software Engineer]"
+        "code_snippet": "[3] (L:7) <title> | [Text: PeerMarket | Buy & Sell locally]"
       },
       {
         "file_path": "index.html",
@@ -275,47 +415,37 @@
       {
         "file_path": "index.html",
         "line_number": 9,
-        "code_snippet": "[3] (L:9) <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">"
+        "code_snippet": "[3] (L:9) <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap\" rel=\"stylesheet\">"
       },
       {
         "file_path": "index.html",
         "line_number": 10,
-        "code_snippet": "[4] (L:10) <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>"
+        "code_snippet": "[4] (L:10) <style> | [Text: body /* Custom scrollbar for horizontal categories */ .no-scrollbar::-webkit-scrollbar .no-scrollbar]"
       },
       {
         "file_path": "index.html",
-        "line_number": 11,
-        "code_snippet": "[5] (L:11) <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap\" rel=\"stylesheet\">"
+        "line_number": 24,
+        "code_snippet": "[4] (L:24) <script type=\"importmap\">"
       },
       {
         "file_path": "index.html",
-        "line_number": 12,
-        "code_snippet": "[6] (L:12) <style> | [Text: body]"
+        "line_number": 34,
+        "code_snippet": "[4] (L:34) <link rel=\"stylesheet\" href=\"/index.css\">"
       },
       {
         "file_path": "index.html",
-        "line_number": 17,
-        "code_snippet": "[6] (L:17) <script type=\"importmap\">"
+        "line_number": 36,
+        "code_snippet": "[4] (L:36) <body>"
       },
       {
         "file_path": "index.html",
-        "line_number": 26,
-        "code_snippet": "[6] (L:26) <link rel=\"stylesheet\" href=\"/index.css\">"
+        "line_number": 37,
+        "code_snippet": "[5] (L:37) <div id=\"root\">"
       },
       {
         "file_path": "index.html",
-        "line_number": 28,
-        "code_snippet": "[6] (L:28) <body class=\"bg-slate-50 text-slate-900 antialiased\">"
-      },
-      {
-        "file_path": "index.html",
-        "line_number": 29,
-        "code_snippet": "[7] (L:29) <div id=\"root\">"
-      },
-      {
-        "file_path": "index.html",
-        "line_number": 30,
-        "code_snippet": "[7] (L:30) <script type=\"module\" src=\"/index.jsx\">"
+        "line_number": 38,
+        "code_snippet": "[5] (L:38) <script type=\"module\" src=\"/index.jsx\">"
       }
     ],
     "index.jsx": [
@@ -330,557 +460,377 @@
         "code_snippet": "[2] (L:13) <App />"
       }
     ],
-    "components/Contact.jsx": [
+    "components/CategoryIcons.jsx": [
       {
-        "file_path": "components/Contact.jsx",
-        "line_number": 28,
-        "code_snippet": "[1] (L:28) <section id=\"contact\" className=\"py-24 bg-slate-50\">"
+        "file_path": "components/CategoryIcons.jsx",
+        "line_number": 6,
+        "code_snippet": "[1] (L:6) <div className=\"bg-white border-b border-gray-200 sticky top-16 z-30\">"
       },
       {
-        "file_path": "components/Contact.jsx",
-        "line_number": 29,
-        "code_snippet": "[2] (L:29) <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 30,
-        "code_snippet": "[3] (L:30) <div className=\"grid grid-cols-1 lg:grid-cols-2 gap-16 items-start\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 32,
-        "code_snippet": "[4] (L:32) <div>"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 33,
-        "code_snippet": "[5] (L:33) <h3 className=\"text-indigo-600 font-bold text-sm uppercase tracking-wider mb-2\"> | [Text: Get In Touch]"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 34,
-        "code_snippet": "[5] (L:34) <h2 className=\"text-4xl md:text-5xl font-extrabold text-slate-900 mb-6\"> | [Text: Ready to start a]"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 34,
-        "code_snippet": "[6] (L:34) <br />"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 35,
-        "code_snippet": "[5] (L:35) <p className=\"text-slate-600 text-lg mb-10\"> | [Text: I'm always open to discussing new opportunities, creative ideas or collaborations to be part of your visions.]"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 39,
-        "code_snippet": "[5] (L:39) <div className=\"space-y-8\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 40,
-        "code_snippet": "[6] (L:40) <div className=\"flex items-start\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 41,
-        "code_snippet": "[7] (L:41) <div className=\"flex-shrink-0 bg-indigo-100 p-4 rounded-2xl text-indigo-600\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 42,
-        "code_snippet": "[8] (L:42) <svg className=\"w-6 h-6\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 43,
-        "code_snippet": "[9] (L:43) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z\" />"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 46,
-        "code_snippet": "[7] (L:46) <div className=\"ml-6\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 47,
-        "code_snippet": "[8] (L:47) <h4 className=\"text-sm font-bold text-slate-400 uppercase tracking-widest\"> | [Text: Email me at]"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 48,
-        "code_snippet": "[8] (L:48) <p className=\"text-xl font-bold text-slate-900\"> | [Text: hello@example.com]"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 52,
-        "code_snippet": "[6] (L:52) <div className=\"flex items-start\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 53,
-        "code_snippet": "[7] (L:53) <div className=\"flex-shrink-0 bg-indigo-100 p-4 rounded-2xl text-indigo-600\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 54,
-        "code_snippet": "[8] (L:54) <svg className=\"w-6 h-6\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 55,
-        "code_snippet": "[9] (L:55) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z\" />"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 56,
-        "code_snippet": "[9] (L:56) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M15 11a3 3 0 11-6 0 3 3 0 016 0z\" />"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 59,
-        "code_snippet": "[7] (L:59) <div className=\"ml-6\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 60,
-        "code_snippet": "[8] (L:60) <h4 className=\"text-sm font-bold text-slate-400 uppercase tracking-widest\"> | [Text: Office Location]"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 61,
-        "code_snippet": "[8] (L:61) <p className=\"text-xl font-bold text-slate-900\"> | [Text: San Francisco, CA]"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 66,
-        "code_snippet": "[5] (L:66) <div className=\"mt-12 flex gap-4\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 68,
-        "code_snippet": "[6] (L:68) <a key={social} href=\"#\" className=\"w-12 h-12 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-600 transition-all shadow-sm\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 69,
-        "code_snippet": "[7] (L:69) <span className=\"sr-only\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 70,
-        "code_snippet": "[7] (L:70) <div className=\"w-6 h-6 bg-slate-200 rounded-sm\" />"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 76,
-        "code_snippet": "[4] (L:76) <div className=\"bg-white p-8 md:p-12 rounded-[2.5rem] shadow-2xl shadow-indigo-100/50 border border-slate-100\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 77,
-        "code_snippet": "[5] (L:77) <form onSubmit={handleSubmit} className=\"space-y-6\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 78,
-        "code_snippet": "[6] (L:78) <div className=\"grid grid-cols-1 md:grid-cols-2 gap-6\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 79,
-        "code_snippet": "[7] (L:79) <div>"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 80,
-        "code_snippet": "[8] (L:80) <label className=\"block text-[6px] font-black uppercase text-slate-500 tracking-wider mb-2\"> | [Text: Full Name]"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 81,
-        "code_snippet": "[8] (L:81-89) <input type=\"text\" name=\"name\" required value={form.name} onChange={handleChange} className=\"w-full bg-slate-50 border-none rounded-xl px-5 py-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 transition-all outline-none\" placeholder=\"John Doe\" />"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 91,
-        "code_snippet": "[7] (L:91) <div>"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 92,
-        "code_snippet": "[8] (L:92) <label className=\"block text-xs font-black uppercase text-slate-400 tracking-wider mb-2\"> | [Text: Email Address]"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 93,
-        "code_snippet": "[8] (L:93-101) <input type=\"email\" name=\"email\" required value={form.email} onChange={handleChange} className=\"w-full bg-slate-50 border-none rounded-xl px-5 py-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 transition-all outline-none\" placeholder=\"john@example.com\" />"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 105,
-        "code_snippet": "[6] (L:105) <div>"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 106,
-        "code_snippet": "[7] (L:106) <label className=\"block text-xs font-black uppercase text-slate-400 tracking-wider mb-2\"> | [Text: Subject]"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 107,
-        "code_snippet": "[7] (L:107-115) <input type=\"text\" name=\"subject\" required value={form.subject} onChange={handleChange} className=\"w-full bg-slate-50 border-none rounded-xl px-5 py-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 transition-all outline-none\" placeholder=\"Project Inquiry\" />"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 118,
-        "code_snippet": "[6] (L:118) <div>"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 119,
-        "code_snippet": "[7] (L:119) <label className=\"block text-xs font-black uppercase text-slate-400 tracking-wider mb-2\"> | [Text: Message]"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 120,
-        "code_snippet": "[7] (L:120-128) <textarea name=\"message\" required value={form.message} onChange={handleChange} rows={5} className=\"w-full bg-slate-50 border-none rounded-xl px-5 py-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 transition-all outline-none resize-none\" placeholder=\"Tell me about your project...\" />"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 131,
-        "code_snippet": "[6] (L:131-135) <button type=\"submit\" disabled={status !== 'idle'} className=\"w-full bg-indigo-600 text-white font-bold py-5 rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 disabled:opacity-50 flex items-center justify-center gap-3\" >"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 137,
-        "code_snippet": "[7] (L:137) <>"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 138,
-        "code_snippet": "[7] (L:138) <svg className=\"animate-spin h-5 w-5 text-white\" viewBox=\"0 0 24 24\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 139,
-        "code_snippet": "[8] (L:139) <circle className=\"opacity-25\" cx=\"12\" cy=\"12\" r=\"10\" stroke=\"currentColor\" strokeWidth=\"4\">"
-      },
-      {
-        "file_path": "components/Contact.jsx",
-        "line_number": 140,
-        "code_snippet": "[8] (L:140) <path className=\"opacity-75\" fill=\"currentColor\" d=\"M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z\">"
-      }
-    ],
-    "components/Hero.jsx": [
-      {
-        "file_path": "components/Hero.jsx",
-        "line_number": 5,
-        "code_snippet": "[1] (L:5) <section id=\"home\" className=\"relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden\">"
-      },
-      {
-        "file_path": "components/Hero.jsx",
+        "file_path": "components/CategoryIcons.jsx",
         "line_number": 7,
-        "code_snippet": "[2] (L:7) <div className=\"absolute top-0 right-0 -z-10 w-1/2 h-full bg-indigo-50/50 rounded-bl-[200px]\" />"
+        "code_snippet": "[2] (L:7) <div className=\"max-w-7xl mx-auto px-4\">"
       },
       {
-        "file_path": "components/Hero.jsx",
+        "file_path": "components/CategoryIcons.jsx",
         "line_number": 8,
-        "code_snippet": "[2] (L:8) <div className=\"absolute -top-24 -left-24 w-96 h-96 bg-indigo-100/30 rounded-full blur-3xl\" />"
+        "code_snippet": "[3] (L:8) <div className=\"flex overflow-x-auto no-scrollbar py-4 space-x-1\">"
       },
       {
-        "file_path": "components/Hero.jsx",
-        "line_number": 10,
-        "code_snippet": "[2] (L:10) <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">"
+        "file_path": "components/CategoryIcons.jsx",
+        "line_number": 9,
+        "code_snippet": "[4] (L:9-12) <button onClick={() => onSelectCategory(null)} className=\"flex flex-col items-center flex-shrink-0 group focus:outline-none\" >"
       },
       {
-        "file_path": "components/Hero.jsx",
-        "line_number": 11,
-        "code_snippet": "[3] (L:11) <div className=\"flex flex-col items-center text-center\">"
-      },
-      {
-        "file_path": "components/Hero.jsx",
+        "file_path": "components/CategoryIcons.jsx",
         "line_number": 13,
-        "code_snippet": "[4] (L:13) <div className=\"relative mb-10 group\">"
+        "code_snippet": "[5] (L:13) <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all duration-200 border-2 ${!selectedCategoryId ? 'bg-indigo-50 border-indigo-600 scale-110 shadow-sm' : 'bg-gray-100 border-transparent group-hover:bg-gray-200'}`}> | [Text: \ud83c\udfe0]"
       },
       {
-        "file_path": "components/Hero.jsx",
-        "line_number": 14,
-        "code_snippet": "[5] (L:14) <div className=\"absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200\" />"
-      },
-      {
-        "file_path": "components/Hero.jsx",
-        "line_number": 15,
-        "code_snippet": "[5] (L:15-19) <img src=\"https://picsum.photos/seed/alex/400/400\" alt=\"Profile\" className=\"relative w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-white shadow-2xl object-cover\" />"
-      },
-      {
-        "file_path": "components/Hero.jsx",
-        "line_number": 20,
-        "code_snippet": "[5] (L:20) <div className=\"absolute bottom-1 right-1 md:bottom-3 md:right-3 w-6 h-6 md:w-8 md:h-8 bg-green-400 border-4 border-white rounded-full animate-pulse opacity-0\" />"
-      },
-      {
-        "file_path": "components/Hero.jsx",
-        "line_number": 23,
-        "code_snippet": "[4] (L:23) <div className=\"max-w-3xl\">"
-      },
-      {
-        "file_path": "components/Hero.jsx",
-        "line_number": 24,
-        "code_snippet": "[5] (L:24) <h2 className=\"text-indigo-600 font-extrabold text-lg uppercase tracking-widest mb-4\"> | [Text: Senior Software Architect]"
-      },
-      {
-        "file_path": "components/Hero.jsx",
-        "line_number": 25,
-        "code_snippet": "[5] (L:25) <h1 className=\"text-5xl md:text-7xl font-black text-slate-900 leading-tight mb-6\"> | [Text: Engineering Digital]"
-      },
-      {
-        "file_path": "components/Hero.jsx",
-        "line_number": 26,
-        "code_snippet": "[6] (L:26) <br className=\"hidden md:block\" />"
-      },
-      {
-        "file_path": "components/Hero.jsx",
-        "line_number": 27,
-        "code_snippet": "[6] (L:27) <span className=\"text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600\"> | [Text: Experiences.]"
-      },
-      {
-        "file_path": "components/Hero.jsx",
-        "line_number": 29,
-        "code_snippet": "[5] (L:29) <p className=\"text-lg md:text-xl text-slate-600 leading-relaxed mb-10 max-w-2xl mx-auto\"> | [Text: I specialize in building scalable, human-centric web applications using modern technology stacks. From concept to deployment, I bridge the gap between complex logic and elegant design.]"
-      },
-      {
-        "file_path": "components/Hero.jsx",
-        "line_number": 33,
-        "code_snippet": "[5] (L:33) <div className=\"flex flex-col items-center justify-center gap-4\">"
-      },
-      {
-        "file_path": "components/Hero.jsx",
-        "line_number": 34,
-        "code_snippet": "[6] (L:34-37) <a href=\"#projects\" className=\"w-full sm:w-auto px-10 py-5 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 text-center\" > | [Text: View Portfolio]"
-      },
-      {
-        "file_path": "components/Hero.jsx",
-        "line_number": 40,
-        "code_snippet": "[6] (L:40-43) <a href=\"#contact\" className=\"w-full sm:w-auto px-10 py-5 bg-white text-indigo-600 border-2 border-indigo-100 font-bold rounded-2xl hover:bg-indigo-50 transition-all text-center\" > | [Text: Let's Talk]"
-      }
-    ],
-    "components/Navbar.jsx": [
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 17,
-        "code_snippet": "[1] (L:17-21) <nav className={`fixed top-0 left-0 right-0 z-10 transition-all duration-300 ${ isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5' }`} >"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 22,
-        "code_snippet": "[2] (L:22) <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 23,
-        "code_snippet": "[3] (L:23) <div className=\"flex justify-between items-center h-16\">"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 24,
-        "code_snippet": "[4] (L:24) <div className=\"flex-shrink-0 flex items-center\">"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 25,
-        "code_snippet": "[5] (L:25) <span className=\"text-2xl font-extrabold tracking-tight text-indigo-600\"> | [Text: ELITE.]"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 29,
-        "code_snippet": "[4] (L:29) <div className=\"hidden md:flex items-center space-x-8\">"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 31,
-        "code_snippet": "[5] (L:31-35) <a key={link.href} href={link.href} className=\"text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors uppercase tracking-wider\" >"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 39,
-        "code_snippet": "[5] (L:39-42) <a href=\"#contact\" className=\"bg-indigo-600 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200\" > | [Text: HIRE ME]"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 48,
-        "code_snippet": "[4] (L:48) <div className=\"md:hidden flex items-center\">"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 49,
-        "code_snippet": "[5] (L:49-52) <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className=\"text-slate-600 hover:text-indigo-600 p-2 focus:outline-none\" >"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 53,
-        "code_snippet": "[6] (L:53) <svg className=\"h-8 w-8\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 55,
-        "code_snippet": "[7] (L:55) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M6 18L18 6M6 6l12 12\" />"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 57,
-        "code_snippet": "[7] (L:57) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M4 6h16M4 12h16M4 18h16\" />"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 66,
-        "code_snippet": "[2] (L:66) <div className={`md:hidden absolute w-full bg-white shadow-xl transition-all duration-300 ${isMobileMenuOpen ? 'top-full opacity-100' : '-top-[500px] opacity-0'}`}>"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 67,
-        "code_snippet": "[3] (L:67) <div className=\"px-4 pt-2 pb-6 space-y-1\">"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 69,
-        "code_snippet": "[4] (L:69-74) <a key={link.href} href={link.href} className=\"block px-3 py-4 text-base font-semibold text-slate-700 hover:text-indigo-600 border-b border-slate-100\" onClick={() => setIsMobileMenuOpen(false)} >"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 78,
-        "code_snippet": "[4] (L:78) <div className=\"pt-4\">"
-      },
-      {
-        "file_path": "components/Navbar.jsx",
-        "line_number": 79,
-        "code_snippet": "[5] (L:79-83) <a href=\"#contact\" className=\"block w-full text-center bg-indigo-600 text-white px-6 py-4 rounded-xl text-lg font-bold\" onClick={() => setIsMobileMenuOpen(false)} > | [Text: HIRE ME]"
-      }
-    ],
-    "components/Projects.jsx": [
-      {
-        "file_path": "components/Projects.jsx",
-        "line_number": 13,
-        "code_snippet": "[1] (L:13) <section id=\"projects\" className=\"py-24 bg-white\">"
-      },
-      {
-        "file_path": "components/Projects.jsx",
-        "line_number": 14,
-        "code_snippet": "[2] (L:14) <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">"
-      },
-      {
-        "file_path": "components/Projects.jsx",
-        "line_number": 15,
-        "code_snippet": "[3] (L:15) <div className=\"flex flex-col md:flex-row md:items-end justify-between mb-16\">"
-      },
-      {
-        "file_path": "components/Projects.jsx",
+        "file_path": "components/CategoryIcons.jsx",
         "line_number": 16,
-        "code_snippet": "[4] (L:16) <div className=\"max-w-xl\">"
+        "code_snippet": "[5] (L:16) <span className={`mt-2 text-xs font-medium transition-colors ${!selectedCategoryId ? 'text-indigo-600 font-bold' : 'text-gray-600 group-hover:text-gray-900'}`}> | [Text: All]"
       },
       {
-        "file_path": "components/Projects.jsx",
-        "line_number": 17,
-        "code_snippet": "[5] (L:17) <h3 className=\"text-indigo-600 font-bold text-sm uppercase tracking-wider mb-2\"> | [Text: Featured Work]"
-      },
-      {
-        "file_path": "components/Projects.jsx",
-        "line_number": 18,
-        "code_snippet": "[5] (L:18) <h2 className=\"text-4xl font-extrabold text-slate-900 mb-4\"> | [Text: Selected Case Studies]"
-      },
-      {
-        "file_path": "components/Projects.jsx",
-        "line_number": 19,
-        "code_snippet": "[5] (L:19) <p className=\"text-slate-500 text-lg\"> | [Text: A showcase of projects where I've led technical strategy and implementation to solve real-world problems.]"
-      },
-      {
-        "file_path": "components/Projects.jsx",
+        "file_path": "components/CategoryIcons.jsx",
         "line_number": 22,
-        "code_snippet": "[4] (L:22) <div className=\"flex flex-wrap gap-2 mt-8 md:mt-0\">"
+        "code_snippet": "[4] (L:22-26) <button key={category.id} onClick={() => onSelectCategory(category.id)} className=\"flex flex-col items-center flex-shrink-0 group focus:outline-none\" >"
       },
       {
-        "file_path": "components/Projects.jsx",
-        "line_number": 24,
-        "code_snippet": "[5] (L:24-32) <button key={cat} onClick={() => setFilter(cat)} className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${ filter === cat ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }`} >"
+        "file_path": "components/CategoryIcons.jsx",
+        "line_number": 27,
+        "code_snippet": "[5] (L:27) <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all duration-200 border-2 ${selectedCategoryId === category.id ? 'bg-indigo-50 border-indigo-600 scale-110 shadow-sm' : 'bg-gray-100 border-transparent group-hover:bg-gray-200'}`}>"
       },
       {
-        "file_path": "components/Projects.jsx",
-        "line_number": 39,
-        "code_snippet": "[3] (L:39) <div className=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8\">"
+        "file_path": "components/CategoryIcons.jsx",
+        "line_number": 30,
+        "code_snippet": "[5] (L:30) <span className={`mt-2 text-xs font-medium transition-colors ${selectedCategoryId === category.id ? 'text-indigo-600 font-bold' : 'text-gray-600 group-hover:text-gray-900'}`}>"
+      }
+    ],
+    "components/MarketplaceHeader.jsx": [
+      {
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 47,
+        "code_snippet": "[1] (L:47) <header className=\"sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm\">"
       },
       {
-        "file_path": "components/Projects.jsx",
-        "line_number": 41,
-        "code_snippet": "[4] (L:41-44) <div key={project.id} className=\"group bg-slate-50 rounded-3xl overflow-hidden border border-slate-100 hover:border-indigo-100 transition-all hover:shadow-2xl hover:shadow-indigo-50/50\" >"
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 48,
+        "code_snippet": "[2] (L:48) <div className=\"max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4\">"
       },
       {
-        "file_path": "components/Projects.jsx",
-        "line_number": 45,
-        "code_snippet": "[5] (L:45) <div className=\"relative h-64 overflow-hidden\">"
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 50,
+        "code_snippet": "[3] (L:50) <div className=\"flex items-center space-x-2 flex-shrink-0\">"
       },
       {
-        "file_path": "components/Projects.jsx",
-        "line_number": 46,
-        "code_snippet": "[6] (L:46-50) <img src={project.image} alt={project.title} className=\"w-full h-full object-cover group-hover:scale-110 transition-transform duration-700\" />"
-      },
-      {
-        "file_path": "components/Projects.jsx",
+        "file_path": "components/MarketplaceHeader.jsx",
         "line_number": 51,
-        "code_snippet": "[6] (L:51) <div className=\"absolute inset-0 bg-indigo-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center\">"
+        "code_snippet": "[4] (L:51) <div className=\"w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center\">"
       },
       {
-        "file_path": "components/Projects.jsx",
+        "file_path": "components/MarketplaceHeader.jsx",
         "line_number": 52,
-        "code_snippet": "[7] (L:52) <span className=\"bg-white text-slate-900 px-6 py-2 rounded-full font-bold text-sm\"> | [Text: View Details]"
+        "code_snippet": "[5] (L:52) <span className=\"text-white font-black text-xl\"> | [Text: P]"
       },
       {
-        "file_path": "components/Projects.jsx",
+        "file_path": "components/MarketplaceHeader.jsx",
         "line_number": 54,
-        "code_snippet": "[6] (L:54) <div className=\"absolute top-4 left-4\">"
+        "code_snippet": "[4] (L:54) <span className=\"hidden sm:block text-xl font-bold text-gray-900 tracking-tight\"> | [Text: PeerMarket]"
       },
       {
-        "file_path": "components/Projects.jsx",
-        "line_number": 55,
-        "code_snippet": "[7] (L:55) <span className=\"bg-white/90 backdrop-blur px-3 py-1 rounded-lg text-xs font-bold text-indigo-600 shadow-sm uppercase tracking-wide\">"
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 60,
+        "code_snippet": "[3] (L:60) <div ref={searchRef} className=\"search-bar relative flex-grow max-w-2xl\">"
       },
       {
-        "file_path": "components/Projects.jsx",
+        "file_path": "components/MarketplaceHeader.jsx",
         "line_number": 61,
-        "code_snippet": "[5] (L:61) <div className=\"p-8\">"
+        "code_snippet": "[4] (L:61) <div className=\"relative\">"
       },
       {
-        "file_path": "components/Projects.jsx",
+        "file_path": "components/MarketplaceHeader.jsx",
         "line_number": 62,
-        "code_snippet": "[6] (L:62) <div className=\"flex flex-wrap gap-2 mb-4\">"
+        "code_snippet": "[5] (L:62) <div className=\"absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none\">"
       },
       {
-        "file_path": "components/Projects.jsx",
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 63,
+        "code_snippet": "[6] (L:63) <svg className=\"h-5 h-5 text-gray-400\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">"
+      },
+      {
+        "file_path": "components/MarketplaceHeader.jsx",
         "line_number": 64,
-        "code_snippet": "[7] (L:64) <span key={tag} className=\"text-[10px] font-black tracking-tighter uppercase text-slate-400 px-0 py-0 bg-white rounded border border-slate-100\">"
+        "code_snippet": "[7] (L:64) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth=\"2\" d=\"M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z\" />"
       },
       {
-        "file_path": "components/Projects.jsx",
-        "line_number": 69,
-        "code_snippet": "[6] (L:69) <h4 className=\"text-xl font-bold text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors\">"
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 67,
+        "code_snippet": "[5] (L:67-74) <input type=\"text\" className=\"block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-full bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all sm:text-sm\" placeholder=\"Search items, brands, categories...\" value={inputValue} onChange={handleInputChange} onFocus={() => setIsFocused(true)} />"
       },
       {
-        "file_path": "components/Projects.jsx",
-        "line_number": 72,
-        "code_snippet": "[6] (L:72) <p className=\"text-slate-500 text-sm leading-relaxed mb-6\">"
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 79,
+        "code_snippet": "[4] (L:79) <div className=\"absolute mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden py-2 animate-in fade-in zoom-in duration-200 z-20\">"
       },
       {
-        "file_path": "components/Projects.jsx",
-        "line_number": 75,
-        "code_snippet": "[6] (L:75-78) <a href={project.link} className=\"inline-flex items-center text-sm font-bold text-slate-900 group-hover:text-indigo-600\" > | [Text: Explore Project]"
-      },
-      {
-        "file_path": "components/Projects.jsx",
+        "file_path": "components/MarketplaceHeader.jsx",
         "line_number": 80,
-        "code_snippet": "[7] (L:80) <svg className=\"ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">"
+        "code_snippet": "[5] (L:80) <div className=\"px-4 py-1 text-[10px] font-bold text-indigo-500 uppercase tracking-wider flex items-center\">"
       },
       {
-        "file_path": "components/Projects.jsx",
+        "file_path": "components/MarketplaceHeader.jsx",
         "line_number": 81,
-        "code_snippet": "[8] (L:81) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M17 8l4 4m0 0l-4 4m4-4H3\" />"
+        "code_snippet": "[6] (L:81) <svg className=\"w-3 h-3 mr-1\" fill=\"currentColor\" viewBox=\"0 0 20 20\">"
+      },
+      {
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 82,
+        "code_snippet": "[7] (L:82) <path d=\"M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1a1 1 0 112 0v1a1 1 0 11-2 0zM13.536 15.657l.707-.707a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414-1.414zM16 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1z\" />"
+      },
+      {
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 88,
+        "code_snippet": "[5] (L:88-92) <button key={i} onClick={() => handleSuggestionClick(s)} className=\"w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700 flex items-center\" >"
+      },
+      {
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 93,
+        "code_snippet": "[6] (L:93) <span className=\"mr-3 text-gray-400\"> | [Text: \ud83d\udd0d]"
+      },
+      {
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 98,
+        "code_snippet": "[5] (L:98) <div className=\"px-4 py-2 text-xs text-gray-400 italic\"> | [Text: Thinking of related items...]"
+      },
+      {
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 105,
+        "code_snippet": "[3] (L:105) <div className=\"flex items-center space-x-4\">"
+      },
+      {
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 106,
+        "code_snippet": "[4] (L:106-109) <button onClick={onSellClick} className=\"hidden sm:flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-full font-semibold text-sm transition-colors shadow-sm\" >"
+      },
+      {
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 110,
+        "code_snippet": "[5] (L:110) <span className=\"mr-1.5\"> | [Text: +]"
+      },
+      {
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 113,
+        "code_snippet": "[4] (L:113) <div className=\"flex items-center space-x-2 cursor-pointer group\">"
+      },
+      {
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 114,
+        "code_snippet": "[5] (L:114) <div className=\"w-10 h-10 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden group-hover:border-indigo-500 transition-colors\">"
+      },
+      {
+        "file_path": "components/MarketplaceHeader.jsx",
+        "line_number": 115,
+        "code_snippet": "[6] (L:115) <img src=\"https://i.pravatar.cc/100?u=currentUser\" alt=\"User\" className=\"w-full h-full object-cover\" />"
+      }
+    ],
+    "components/ProductGrid.jsx": [
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 7,
+        "code_snippet": "[1] (L:7) <div className=\"flex flex-col items-center justify-center py-20 text-gray-500\">"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 8,
+        "code_snippet": "[2] (L:8) <svg className=\"w-16 h-16 mb-4 text-gray-300\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 9,
+        "code_snippet": "[3] (L:9) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth=\"2\" d=\"M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z\" />"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 11,
+        "code_snippet": "[2] (L:11) <p className=\"text-xl font-medium\"> | [Text: No items found]"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 12,
+        "code_snippet": "[2] (L:12) <p className=\"text-sm\"> | [Text: Try adjusting your search or category filters.]"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 18,
+        "code_snippet": "[1] (L:18) <div className=\"flex flex-col gap-4 md:gap-6 py-6\">"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 20,
+        "code_snippet": "[2] (L:20-23) <div key={product.id} className=\"item-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow group cursor-pointer\" >"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 25,
+        "code_snippet": "[3] (L:25) <div className=\"relative aspect-square overflow-hidden bg-gray-100\">"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 26,
+        "code_snippet": "[4] (L:26-30) <img src={product.image} alt={product.title} className=\"w-full h-full object-cover group-hover:scale-105 transition-transform duration-300\" />"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 31,
+        "code_snippet": "[4] (L:31) <div className=\"absolute top-2 left-2 flex flex-col gap-1\">"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 32,
+        "code_snippet": "[5] (L:32) <span className=\"bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-bold text-gray-900 shadow-sm\"> | [Text: $]"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 36,
+        "code_snippet": "[4] (L:36) <button className=\"absolute top-2 right-2 p-1.5 rounded-full bg-white/80 hover:bg-white backdrop-blur-sm transition-colors shadow-sm\">"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 37,
+        "code_snippet": "[5] (L:37) <svg className=\"w-4 h-4 text-gray-600 hover:text-red-500\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 38,
+        "code_snippet": "[6] (L:38) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth=\"2\" d=\"M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z\" />"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 44,
+        "code_snippet": "[3] (L:44) <div className=\"p-3 md:p-4 max-h-12 overflow-hidden\">"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 45,
+        "code_snippet": "[4] (L:45) <h3 className=\"text-sm font-semibold text-gray-900 mb-1 line-clamp-2 min-h-[40px]\">"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 49,
+        "code_snippet": "[4] (L:49) <div className=\"flex items-center text-xs text-gray-500 mb-3\">"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 50,
+        "code_snippet": "[5] (L:50) <svg className=\"w-3 h-3 mr-1\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 51,
+        "code_snippet": "[6] (L:51) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth=\"2\" d=\"M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z\" />"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 52,
+        "code_snippet": "[6] (L:52) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth=\"2\" d=\"M15 11a3 3 0 11-6 0 3 3 0 016 0z\" />"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 54,
+        "code_snippet": "[5] (L:54) <span className=\"truncate\">"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 55,
+        "code_snippet": "[5] (L:55) <span className=\"mx-1\"> | [Text: \u2022]"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 56,
+        "code_snippet": "[5] (L:56) <span className=\"flex-shrink-0\">"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 59,
+        "code_snippet": "[4] (L:59) <div className=\"pt-3 border-t border-gray-100\">"
+      },
+      {
+        "file_path": "components/ProductGrid.jsx",
+        "line_number": 60,
+        "code_snippet": "[5] (L:60) <SellerBadge seller={product.seller} />"
+      }
+    ],
+    "components/SellerBadge.jsx": [
+      {
+        "file_path": "components/SellerBadge.jsx",
+        "line_number": 5,
+        "code_snippet": "[1] (L:5) <div className={`seller-info flex items-center space-x-2 opacity-20 ${className}`}>"
+      },
+      {
+        "file_path": "components/SellerBadge.jsx",
+        "line_number": 6,
+        "code_snippet": "[2] (L:6-10) <img src={seller.avatar} alt={seller.name} className=\"w-6 h-6 rounded-full object-cover border border-gray-200\" />"
+      },
+      {
+        "file_path": "components/SellerBadge.jsx",
+        "line_number": 11,
+        "code_snippet": "[2] (L:11) <div className=\"flex flex-col\">"
+      },
+      {
+        "file_path": "components/SellerBadge.jsx",
+        "line_number": 12,
+        "code_snippet": "[3] (L:12) <div className=\"flex items-center space-x-1\">"
+      },
+      {
+        "file_path": "components/SellerBadge.jsx",
+        "line_number": 13,
+        "code_snippet": "[4] (L:13) <span className=\"text-xs font-semibold text-gray-700 truncate max-w-[80px]\">"
+      },
+      {
+        "file_path": "components/SellerBadge.jsx",
+        "line_number": 17,
+        "code_snippet": "[4] (L:17) <svg className=\"w-3 h-3 text-blue-500 fill-current\" viewBox=\"0 0 20 20\">"
+      },
+      {
+        "file_path": "components/SellerBadge.jsx",
+        "line_number": 18,
+        "code_snippet": "[5] (L:18) <path d=\"M6.293 9.293a1 1 0 011.414 0L10 11.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z\" />"
+      },
+      {
+        "file_path": "components/SellerBadge.jsx",
+        "line_number": 19,
+        "code_snippet": "[5] (L:19) <circle cx=\"10\" cy=\"10\" r=\"9\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\"/>"
+      },
+      {
+        "file_path": "components/SellerBadge.jsx",
+        "line_number": 20,
+        "code_snippet": "[5] (L:20) <path fillRule=\"evenodd\" d=\"M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z\" clipRule=\"evenodd\" />"
+      },
+      {
+        "file_path": "components/SellerBadge.jsx",
+        "line_number": 24,
+        "code_snippet": "[3] (L:24) <div className=\"flex items-center text-[10px] text-gray-500\">"
+      },
+      {
+        "file_path": "components/SellerBadge.jsx",
+        "line_number": 25,
+        "code_snippet": "[4] (L:25) <span className=\"text-yellow-500 mr-0.5\"> | [Text: \u2605]"
+      },
+      {
+        "file_path": "components/SellerBadge.jsx",
+        "line_number": 26,
+        "code_snippet": "[4] (L:26) <span>"
+      },
+      {
+        "file_path": "components/SellerBadge.jsx",
+        "line_number": 27,
+        "code_snippet": "[4] (L:27) <span className=\"mx-1\"> | [Text: \u2022]"
+      },
+      {
+        "file_path": "components/SellerBadge.jsx",
+        "line_number": 28,
+        "code_snippet": "[4] (L:28) <span> | [Text: reviews]"
       }
     ]
   }
