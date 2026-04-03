@@ -10,14 +10,13 @@ import os
 
 # Import all modules
 from config import logger, app_state
-from retriever import MS2CRetriever
 from routes import setup_routes
 
-# Try to import the custom AI Retriever, fall back to mock if PyTorch issues
+# Try to import the trained MS2C Model, fall back to mock if PyTorch issues
 try:
-    from ms2c import MS2CRetriever as CustomRetriever
+    from ms2c import MS2CRetriever
     PYTORCH_AVAILABLE = True
-    print("✅ PyTorch and CodeBERT models available")
+    print("✅ PyTorch and CodeBERT models available - Loading trained MS2C retriever")
 except Exception as e:
     import traceback
     traceback.print_exc()
@@ -37,8 +36,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize retriever with empty index (will be populated via /api/index-repository)
-retriever = MS2CRetriever(model_path="", index_dict={})
+# Initialize retriever with trained checkpoint and empty index (will be populated via /api/index-repository)
+# Using the trained MS2CModel from benchmarking: ms2c_E2E_JOINT_BEST.pt
+retriever = None
+if PYTORCH_AVAILABLE:
+    try:
+        checkpoint_path = "ms2c_E2E_JOINT_BEST.pt"
+        empty_index = {}  # Will be populated via /api/index-repository
+        retriever = MS2CRetriever(
+            model_path=checkpoint_path,
+            index_dict=empty_index,
+            repos_dir=None,
+            batch_size=64
+        )
+        print(f"✅ Loaded trained checkpoint: {checkpoint_path}")
+    except Exception as e:
+        print(f"⚠️  Failed to initialize retriever with checkpoint: {e}")
+        import traceback
+        traceback.print_exc()
+        PYTORCH_AVAILABLE = False
 
 # Register all routes
 setup_routes(app, retriever, PYTORCH_AVAILABLE)

@@ -2,33 +2,119 @@
 Utility functions for bug diagnosis and weighting
 """
 
+import os
+from PIL import Image
+from config import logger
 
-def compute_gating_weight(bug_description: str):
+
+def compute_visual_quality(image_path: str) -> float:
     """
-    Compute text vs visual contribution based on description quality and length.
-    Better descriptions → higher text weight
-    Shorter/vague descriptions → higher visual weight (screenshot more important)
-    Returns normalized values between 0 and 1 (not percentages).
+    Analyze uploaded screenshot to compute visual information quality.
+    Returns a weight between 0.0 (low quality/no image) and 1.0 (high quality).
+    
+    Quality factors:
+    - File exists and is valid image
+    - Image resolution (higher resolution = more detail)
+    - Image size in bytes (larger = more information)
     """
+    if not image_path or not os.path.exists(image_path):
+        logger.info("📸 No screenshot provided")
+        return 0.0
+    
+    try:
+        with Image.open(image_path) as img:
+            width, height = img.size
+            file_size_kb = os.path.getsize(image_path) / 1024
+            
+            # Quality score based on resolution
+            # High quality: > 1000px width, medium: 500-1000px, low: < 500px
+            resolution_score = min(1.0, (width * height) / (1920 * 1080))  # Normalize to 1080p
+            
+            # Quality score based on file size
+            # High quality: > 100KB, medium: 50-100KB, low: < 50KB  
+            size_score = min(1.0, file_size_kb / 200)  # Normalize to 200KB
+            
+            # Combined visual quality (average of dimensions)
+            visual_quality = (resolution_score + size_score) / 2
+            
+            logger.info(f"📸 Screenshot Quality Analysis:")
+            logger.info(f"   Resolution: {width}x{height} (score: {resolution_score:.2f})")
+            logger.info(f"   File Size: {file_size_kb:.1f}KB (score: {size_score:.2f})")
+            logger.info(f"   Overall Visual Quality: {visual_quality:.2f}")
+            
+            return visual_quality
+            
+    except Exception as e:
+        logger.warning(f"⚠️  Failed to analyze image: {e}")
+        return 0.1  # Slight credit for attempting to provide visual info
+
+
+def compute_gating_weight(bug_description: str, image_path: str = None):
+    """
+    Compute multimodal fusion weight: Text vs Visual contribution.
+    Integrates description quality + screenshot quality for adaptive scoring.
+    
+    Returns: (alpha_text, alpha_visual) where sum = 1.0
+    - alpha_text: Weight for textual bug description (0.0-1.0)
+    - alpha_visual: Weight for visual screenshot (0.0-1.0)
+    
+    Thesis: Adaptive Score-Level Fusion (Section 3.2.4)
+    Final Score = Semantic Score × alpha_text
+    """
+    # Analyze text quality
     desc_length = len(bug_description)
-    detail_keywords = ["specifically", "specifically", "exactly", "exactly", "however", "although", "instead of", "should be"]
+    detail_keywords = ["specifically", "exactly", "however", "although", "instead of", "should be"]
     detail_count = sum(1 for kw in detail_keywords if kw in bug_description.lower())
     
-    # Longer, more detailed descriptions get higher text weight
+    # Normalize text quality to 0.0-1.0 range
     if desc_length > 200 and detail_count > 0:
-        text_weight = 0.7
-        visual_weight = 0.3
+        text_quality = 0.8
     elif desc_length > 100:
-        text_weight = 0.5
-        visual_weight = 0.5
+        text_quality = 0.6
     elif desc_length > 50:
-        text_weight = 0.35
-        visual_weight = 0.65
+        text_quality = 0.4
+    elif desc_length > 20:
+        text_quality = 0.2
     else:
-        text_weight = 0.2
-        visual_weight = 0.8
+        text_quality = 0.1
     
-    return text_weight, visual_weight
+    # Analyze visual quality
+    visual_quality = compute_visual_quality(image_path) if image_path else 0.0
+    
+    logger.info(f"🎯 Multimodal Gating Weight Computation:")
+    logger.info(f"   Text Quality (description): {text_quality:.2f}")
+    logger.info(f"   Visual Quality (screenshot): {visual_quality:.2f}")
+    
+    # Thesis-Aligned: Adaptive fusion based on input quality
+    # If both inputs are good: balanced (0.5/0.5)
+    # If only text is good: heavily text-weighted (0.8/0.2)
+    # If only visual is good: heavily visual-weighted (0.2/0.8)
+    total_quality = text_quality + visual_quality
+    
+    if total_quality == 0:
+        # Fallback: no useful input
+        alpha_text = 0.5
+        alpha_visual = 0.5
+    else:
+        # Normalize by quality scores
+        alpha_text = text_quality / total_quality
+        alpha_visual = visual_quality / total_quality
+    
+    # Ensure sum = 1.0 (with floating point tolerance)
+    alpha_text = round(alpha_text, 4)
+    alpha_visual = round(alpha_visual, 4)
+    
+    logger.info(f"   → Alpha(Text): {alpha_text:.4f}, Alpha(Visual): {alpha_visual:.4f}")
+    
+    return alpha_text, alpha_visual
+
+
+def compute_gating_weight_legacy(bug_description: str):
+    """
+    Legacy text-only gating weight computation.
+    Kept for backward compatibility.
+    """
+    return compute_gating_weight(bug_description, image_path=None)
 
 
 def generate_smart_results(bug_description: str, repo_url: str):

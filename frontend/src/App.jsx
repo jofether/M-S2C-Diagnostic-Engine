@@ -82,7 +82,7 @@ function App() {
 
       // Create an AbortController for timeout
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minute timeout
+      const timeoutId = setTimeout(() => controller.abort(), 600000) // 10 minute timeout for dual-encoder embedding
 
       const response = await fetch('http://localhost:8000/api/index-repository', {
         method: 'POST',
