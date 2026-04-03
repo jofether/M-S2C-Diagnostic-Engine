@@ -36,11 +36,20 @@ logger = setup_logging()
 # CONSTANTS
 # ============================================================
 
-ALLOWED_EXTENSIONS = {'.jsx', '.js', '.tsx', '.ts', '.html', '.css'}
+# CRITICAL: Only include files with AST structure (tags/functions)
+# DO NOT include .css - extract_ast_nodes() looks for <tags>, not CSS rules
+# Including .css would waste processing time and clutter the index with empty results
+ALLOWED_EXTENSIONS = {'.jsx', '.js', '.tsx', '.ts', '.html'}
+
 SEARCH_DIRECTORIES = ['src', 'components', 'pages', 'styles', 'features', 'UI', 'ui', 'lib', 'utils']
+
+# Ignore directories that contain dependencies or build artifacts
 IGNORE_DIRECTORIES = ['node_modules', '.git', '__pycache__', '.venv', 'venv', 'dist', 'build']
+
+# Ignore specific files that don't contain code to be analyzed
 IGNORE_FILES = {'.gitignore', 'package.json', 'tsconfig.json', 'vite.config.js'}
 
+# AST extraction limits to prevent memory bloat
 MAX_COMPONENTS_PER_FILE = 3
 MAX_SNIPPET_LENGTH = 2000
 MAX_CSS_RULES_LENGTH = 1000
@@ -81,3 +90,36 @@ class AppState:
 
 # Global app state instance
 app_state = AppState()
+
+
+# ============================================================
+# CONFIGURATION VERIFICATION
+# ============================================================
+# 
+# VERIFY YOUR SETTINGS FOR YOUR PROJECT:
+#
+# 1. ALLOWED_EXTENSIONS
+#    ✅ MUST include: .jsx, .js, .tsx, .ts, .html (AST-extractable files)
+#    ❌ MUST NOT include: .css, .png, .json, .md (non-AST files)
+#    Why: extract_ast_nodes() in indexer.py looks for JSX tags (<tag>)
+#         CSS, images, etc. won't have tags and will waste resources
+#    Custom Projects: Add .vue for Vue.js, .astro for Astro, etc.
+#
+# 2. SEARCH_DIRECTORIES
+#    These folders will be SCANNED for source files
+#    Update based on your project structure:
+#    - Next.js: ['pages', 'components', 'lib']
+#    - Vue.js: ['src/components', 'src/pages', 'src']
+#    - Astro: ['src/components', 'src/pages']
+#    - Svelte: ['src/components', 'src/routes']
+#
+# 3. IGNORE_DIRECTORIES
+#    These will be SKIPPED during scanning
+#    Usually safe, but if you have custom build/dist names, add them here
+#    Common: node_modules, .git, dist, build, .next, .nuxt
+#
+# 4. IGNORE_FILES
+#    These won't be searched if found
+#    Mostly safe - these are config files with no executable code
+#
+# ============================================================

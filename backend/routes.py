@@ -12,7 +12,7 @@ from fastapi import UploadFile, File, Form
 
 from config import logger, app_state
 from repository import clone_repository
-from indexer import build_index_from_repo, reindex_retriever
+from indexer import build_index_from_repo, reindex_retriever, get_index_status
 from utils import compute_gating_weight, generate_smart_results
 
 
@@ -43,6 +43,20 @@ def setup_routes(app, retriever, pytorch_available):
         retriever: MS2CRetriever instance
         pytorch_available: Boolean indicating if PyTorch is available
     """
+    
+    @app.get("/api/index-status")
+    async def index_status():
+        """
+        Returns the current index status for frontend status polling.
+        Used to check if embeddings are ready before allowing searches.
+        
+        Returns:
+            JSON with is_index_ready flag
+        """
+        return {
+            "is_index_ready": get_index_status(),
+            "status": "ready" if get_index_status() else "indexing"
+        }
     
     @app.post("/api/index-repository")
     async def index_repository(repo_url: str = Form(...)):
@@ -159,12 +173,14 @@ def setup_routes(app, retriever, pytorch_available):
                 "files_indexed": len(index_dict),
                 "snippets_indexed": total_snippets,
                 "files": unique_files,
-                "timestamp": str(datetime.now())
+                "timestamp": str(datetime.now()),
+                "is_index_ready": get_index_status()
             }
             
             print(f"\n📤 API Response files array: {response_data['files']}")
             print(f"   Type: {type(response_data['files'])}")
             print(f"   Count: {len(response_data['files'])}")
+            print(f"   is_index_ready: {response_data['is_index_ready']}")
             print(f"\n✅ ABOUT TO RETURN RESPONSE TO CLIENT")
             print(f"{'='*60}\n")
             
@@ -201,17 +217,15 @@ def setup_routes(app, retriever, pytorch_available):
         """
         global global_indexed_data
         
-        # 1. Save the uploaded image temporarily
-        temp_image_path = f"temp_{screenshot.filename}"
-        with open(temp_image_path, "wb") as buffer:
-            shutil.copyfileobj(screenshot.file, buffer)
+        # 1. Read the uploaded image as raw bytes (Fix #3 in ms2c.py handles PIL conversion)
+        image_bytes = await screenshot.read()
             
         try:
             print(f"\n{'='*60}")
             print(f"🔍 DIAGNOSING BUG")
             print(f"{'='*60}")
             print(f"📝 Query: {bug_description[:80]}...")
-            print(f"🖼️  Visual: {screenshot.filename}")
+            print(f"🖼️  Visual: {screenshot.filename} ({len(image_bytes)} bytes)")
             print(f"📦 Repository: {app_state.indexed_repo_url}")
             print(f"📊 Indexed: {app_state.file_count} files, {app_state.snippet_count} snippets")
             print(f"💾 Global indexed data has {len(global_indexed_data)} files")
@@ -220,7 +234,7 @@ def setup_routes(app, retriever, pytorch_available):
             # Log to file
             logger.info(f"\n🔍 DIAGNOSING BUG")
             logger.info(f"📝 Query: {bug_description[:80]}...")
-            logger.info(f"🖼️  Visual: {screenshot.filename}")
+            logger.info(f"🖼️  Visual: {screenshot.filename} ({len(image_bytes)} bytes)")
             logger.info(f"📦 Repository: {app_state.indexed_repo_url}")
             logger.info(f"📊 Indexed: {app_state.file_count} files, {app_state.snippet_count} snippets")
             logger.info(f"💾 Global indexed data has {len(global_indexed_data)} files")
@@ -253,11 +267,11 @@ def setup_routes(app, retriever, pytorch_available):
             if not app_state.is_indexed:
                 print(f"⚠️  No repository indexed yet - using keyword fallback")
                 results = generate_smart_results(bug_description, app_state.indexed_repo_url)
-                alpha_text, alpha_visual = compute_gating_weight(bug_description, image_path=temp_image_path)
+                alpha_text, alpha_visual = compute_gating_weight(bug_description, image_path=image_bytes)
             elif not is_real_index:
                 print(f"⚠️  Using default dummy index (no real repository indexed)")
                 results = generate_smart_results(bug_description, app_state.indexed_repo_url)
-                alpha_text, alpha_visual = compute_gating_weight(bug_description, image_path=temp_image_path)
+                alpha_text, alpha_visual = compute_gating_weight(bug_description, image_path=image_bytes)
             else:
                 # Use the retriever with real indexed data
                 print(f"✅ Using real indexed repository data")
@@ -289,7 +303,7 @@ def setup_routes(app, retriever, pytorch_available):
                     semantic_results, alpha_val = retriever.retrieve_top_k(
                         text_query=cleaned_query,
                         target_key=None,
-                        image_path=temp_image_path if os.path.exists(temp_image_path) else None,
+                        image_path=image_bytes,  # Pass raw bytes directly (Fix #3 in ms2c.py handles PIL conversion)
                         k=300,  # Get many results
                         mode="multimodal",
                         scope="file"
@@ -427,19 +441,12 @@ def setup_routes(app, retriever, pytorch_available):
                 logger.info(f"   First candidate: {response['candidates'][0]}")
             print(f"{'='*60}\n")
             
-            # Clean up the temp image
-            if os.path.exists(temp_image_path):
-                os.remove(temp_image_path)
-            
             return response
             
         except Exception as e:
             print(f"❌ Error during diagnosis: {e}")
             import traceback
             traceback.print_exc()
-            # Make sure we clean up the image even if the model crashes
-            if os.path.exists(temp_image_path):
-                os.remove(temp_image_path)
             return {
                 "status": "error", 
                 "message": str(e),

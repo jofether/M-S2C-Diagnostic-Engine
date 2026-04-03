@@ -15,6 +15,13 @@ class MS2CRetriever:
     - Dense vector embeddings via CodeBERT (microsoft/codebert-base)
     - Vector similarity search using Cosine Similarity (L2-normalized dot product)
     - Adaptive Score-Level Fusion with gating weight for multimodal adaptation
+    - Device Management: MATCHED with ms2c.py (cuda/cpu detection)
+    
+    CRITICAL FIXES:
+    1. Device Initialization: torch.device("cuda" if available else "cpu") - matches ms2c.py
+    2. Tensor Movement: All tensors moved to self.device explicitly
+    3. Device Verification: Pre-computation checks ensure query and node vectors on same device
+    4. Global Embeddings: Stacked tensor maintained on self.device for ms2c.py compatibility
     
     Thesis References:
     - Section 3.1: CodeBERT embeddings for semantic code representation
@@ -29,6 +36,7 @@ class MS2CRetriever:
         Args:
             model_name: HuggingFace model identifier (default: microsoft/codebert-base)
         """
+        # CRITICAL FIX: Match device initialization with ms2c.py
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logger.info(f"🚀 Initializing M-S2C Neural Retriever on device: {self.device}")
         
@@ -44,6 +52,8 @@ class MS2CRetriever:
         self.embedded_nodes = []  # List of {'key': str, 'code': str, 'vector': tensor}
         self.unique_files = set()  # Track unique files for stats
         self.global_corpus = []  # For statistics tracking
+        self.global_embeddings = None  # Stacked tensor of all embeddings (for compatibility with ms2c.py)
+        self.file_embeddings = None  # For file-level similarity computation
         
     def _embed_text(self, text: str) -> torch.Tensor:
         """
@@ -90,6 +100,7 @@ class MS2CRetriever:
             batch_size: (reserved for future batch processing optimization)
         """
         logger.info(f"📊 Building Neural Index from {len(index_dict)} file groups")
+        logger.info(f"   Device: {self.device}")
         
         self.index_dict = index_dict
         self.embedded_nodes = []
@@ -97,6 +108,8 @@ class MS2CRetriever:
         self.global_corpus = []
         
         total_snippets = 0
+        embeddings_list = []  # Collect embeddings for stacking
+        
         for file_key, snippets in index_dict.items():
             # Extract unique file from key (before " (Lines...)")
             file_name = file_key.split(' (Lines')[0] if ' (Lines' in file_key else file_key
@@ -105,17 +118,37 @@ class MS2CRetriever:
             for snippet in snippets:
                 # Embed each AST node snippet
                 vector = self._embed_text(snippet)
+                
+                # CRITICAL FIX: Verify vector is on correct device
+                if vector.device != self.device:
+                    logger.warning(f"⚠️  DEVICE MISMATCH: Vector on {vector.device}, expected {self.device}. Moving...")
+                    vector = vector.to(self.device)
+                
                 self.embedded_nodes.append({
                     'key': file_key,
                     'code': snippet,
                     'vector': vector
                 })
-                self.global_corpus.append(snippet)
+                embeddings_list.append(vector)
+                self.global_corpus.append((file_key, snippet))
                 total_snippets += 1
+        
+        # Stack all embeddings into single tensor for compatibility with ms2c.py
+        if embeddings_list:
+            self.global_embeddings = torch.cat(embeddings_list, dim=0)  # Shape: (num_snippets, 768)
+            # Verify stacked tensor is on correct device
+            if self.global_embeddings.device != self.device:
+                logger.warning(f"⚠️  DEVICE MISMATCH: global_embeddings on {self.global_embeddings.device}, moving to {self.device}...")
+                self.global_embeddings = self.global_embeddings.to(self.device)
+        else:
+            self.global_embeddings = None
         
         logger.info(f"✅ Index Built: {total_snippets} snippets across {len(self.unique_files)} files")
         logger.info(f"   Device: {self.device}")
         logger.info(f"   Embedding dimension: 768 (CodeBERT)")
+        if self.global_embeddings is not None:
+            logger.info(f"   Global embeddings tensor shape: {self.global_embeddings.shape}")
+            logger.info(f"   Global embeddings device: {self.global_embeddings.device}")
     
     def search(
         self,
@@ -163,10 +196,19 @@ class MS2CRetriever:
         scored_results = []
         
         for idx, node in enumerate(self.embedded_nodes):
+            node_vector = node['vector']
+            
+            # CRITICAL FIX: Ensure both tensors are on same device before computation
+            if node_vector.device != query_vector.device:
+                logger.warning(f"⚠️  DEVICE MISMATCH at index {idx}: "
+                              f"query on {query_vector.device}, node on {node_vector.device}. "
+                              f"Moving node to query device...")
+                node_vector = node_vector.to(query_vector.device)
+            
             # Cosine similarity via normalized dot product (Thesis Section 3.2.1)
             semantic_score = torch.mm(
                 query_vector,
-                node['vector'].transpose(0, 1)
+                node_vector.transpose(0, 1)
             ).item()
             
             # Step 3: CRITICAL - Adaptive Score-Level Fusion (Thesis Section 3.2.4)

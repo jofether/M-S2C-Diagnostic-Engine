@@ -32,6 +32,11 @@ indexing_lock = asyncio.Lock()
 is_index_ready = False
 
 
+def get_index_status():
+    """Returns the current index ready status."""
+    return is_index_ready
+
+
 def extract_ast_nodes(content: str, filepath: str) -> list:
     """
     CRITICAL FIX #4: Synchronous State-Machine Parser.

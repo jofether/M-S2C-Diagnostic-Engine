@@ -4,6 +4,7 @@ function App() {
   const [currentState, setCurrentState] = useState('QUERY')
   const [repositoryUrl, setRepositoryUrl] = useState('')
   const [repositoryIndexed, setRepositoryIndexed] = useState(false)
+  const [isIndexReady, setIsIndexReady] = useState(true) // Track backend embedding status
   const [indexedRepoName, setIndexedRepoName] = useState('')
   const [indexedBranchName, setIndexedBranchName] = useState('')
   const [bugDescription, setBugDescription] = useState('')
@@ -19,6 +20,7 @@ function App() {
   const [carouselIndex, setCarouselIndex] = useState({}) // Track carousel index for each result
   const [menuOpen, setMenuOpen] = useState(false) // Burger menu toggle
   const [queryHistory, setQueryHistory] = useState([]) // Query history for sidebar
+  const [statusPollInterval, setStatusPollInterval] = useState(null) // Track polling interval
   const chatEndRef = useRef(null) // Files from indexed repo
 
   // Load query history from localStorage on mount and save repo context
@@ -67,6 +69,53 @@ function App() {
       clearInterval(messageInterval)
     }
   }, [currentState])
+
+  // Poll index status until embeddings are ready
+  useEffect(() => {
+    if (!repositoryIndexed || isIndexReady) {
+      // Stop polling if not indexed or already ready
+      if (statusPollInterval) {
+        clearInterval(statusPollInterval)
+        setStatusPollInterval(null)
+      }
+      return
+    }
+
+    console.log('🔄 Starting index status polling...')
+    
+    const pollStatus = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/index-status')
+        if (response.ok) {
+          const data = await response.json()
+          console.log('📊 Index status:', data)
+          
+          if (data.is_index_ready) {
+            console.log('✅ Index is ready! Embeddings complete.')
+            setIsIndexReady(true)
+            // Stop polling
+            if (statusPollInterval) {
+              clearInterval(statusPollInterval)
+              setStatusPollInterval(null)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error polling index status:', error)
+      }
+    }
+
+    // Poll every 2 seconds
+    const interval = setInterval(pollStatus, 2000)
+    setStatusPollInterval(interval)
+
+    // Also check immediately
+    pollStatus()
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [repositoryIndexed, isIndexReady, statusPollInterval])
 
   const handleIndexRepository = async () => {
     if (!repositoryUrl.trim()) return
@@ -135,6 +184,15 @@ function App() {
       setIndexedRepoName(repoName)
       setIndexedBranchName(branchName)
       setRepositoryIndexed(true)
+      
+      // Initialize isIndexReady from response (will be false initially, polling will update it)
+      if (data.is_index_ready !== undefined) {
+        console.log('📊 Backend is_index_ready:', data.is_index_ready)
+        setIsIndexReady(data.is_index_ready)
+      } else {
+        console.log('⚠️ Assuming backend is still indexing...')
+        setIsIndexReady(false)
+      }
       
       // Set the files from the API response (not hardcoded)
       if (data.files && Array.isArray(data.files)) {
@@ -283,6 +341,7 @@ function App() {
 
   const handleChangeRepository = () => {
     setRepositoryIndexed(false)
+    setIsIndexReady(true)
     setIndexedRepoName('')
     setIndexedBranchName('')
     setRepositoryUrl('')
@@ -419,6 +478,7 @@ function App() {
           repositoryUrl={repositoryUrl}
           setRepositoryUrl={setRepositoryUrl}
           repositoryIndexed={repositoryIndexed}
+          isIndexReady={isIndexReady}
           indexedRepoName={indexedRepoName}
           indexedBranchName={indexedBranchName}
           bugDescription={bugDescription}
@@ -598,6 +658,7 @@ function QueryState({
   repositoryUrl,
   setRepositoryUrl,
   repositoryIndexed,
+  isIndexReady = true,
   indexedRepoName,
   indexedBranchName,
   bugDescription,
@@ -1165,6 +1226,18 @@ function QueryState({
               : 'bg-white border border-slate-200/50 shadow-sm'
           }`}>
             <div className="space-y-3">
+              {/* Index Status Indicator */}
+              {!isIndexReady && (
+                <div className={`p-2 rounded text-xs font-semibold flex items-center gap-2 ${
+                  darkMode
+                    ? 'bg-amber-900/30 border border-amber-700/50 text-amber-300'
+                    : 'bg-amber-50 border border-amber-200 text-amber-700'
+                }`}>
+                  <span className="inline-block animate-spin">⏳</span>
+                  Building embeddings... This may take a few moments.
+                </div>
+              )}
+              
               {/* Bug Description */}
               <div>
                 <label className={`text-xs font-semibold block mb-1.5 ${
@@ -1286,16 +1359,16 @@ function QueryState({
               {/* Analyze Button */}
               <button
                 onClick={onDiagnoseBug}
-                disabled={!bugDescription.trim() || isAnalyzing}
+                disabled={!bugDescription.trim() || isAnalyzing || !isIndexReady}
                 className={`w-full font-semibold py-2 px-3 rounded-lg text-sm transition-all ${
-                  !bugDescription.trim() || isAnalyzing
+                  !bugDescription.trim() || isAnalyzing || !isIndexReady
                     ? `${darkMode ? 'bg-indigo-600/40' : 'bg-indigo-500/40'} text-slate-400 cursor-not-allowed opacity-60`
                     : darkMode
                       ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                       : 'bg-indigo-600 hover:bg-indigo-700 text-white'
                 }`}
               >
-                {isAnalyzing ? '⏳ Analyzing...' : '🔍 Analyze Bug'}
+                {!isIndexReady ? '⏳ Indexing Repository...' : isAnalyzing ? '⏳ Analyzing...' : '🔍 Analyze Bug'}
               </button>
             </div>
           </div>
