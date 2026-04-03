@@ -16,13 +16,19 @@ except ImportError:
 
 """
 =========================================================================================
-Multimodal Semantic-to-Code (MS2C) - Live Indexer
+Repository AST Indexer - Thesis-Aligned (Based on indexer_basis.py)
 =========================================================================================
-CRITICAL PROTOTYPE FIXES INCLUDED:
-1. Synchronous AST Parsing: extract_ast_nodes is strictly CPU-bound.
-2. Async Threading: build_index_async prevents FastAPI Event Loop blocking.
-3. Global State Lock: indexing_lock ensures searches wait until the index is ready.
-4. VRAM Safety: Reduced batch size in reindex_retriever to prevent silent node dropping.
+Scans repositories and extracts opening JSX/HTML tags with intelligent parsing.
+Uses custom state-machine parser to handle JSX complexities.
+
+THESIS IMPROVEMENTS:
+- Maintains chronological order (no deduplication)
+- Injects line number ranges: (L:x-y) or (L:x)
+- Brace-aware look-ahead: Strips JS logic, extracts inner text
+- Depth tracking with silent closing tag handling
+- Fixes self-closing tags and trailing JS debris
+
+Supports async/await for web API integration.
 =========================================================================================
 """
 
@@ -39,18 +45,23 @@ def get_index_status():
 
 def extract_ast_nodes(content: str, filepath: str) -> list:
     """
-    CRITICAL FIX #4: Synchronous State-Machine Parser.
-    This function iterates character-by-character. It is highly CPU-bound.
-    Making this `async` in FastAPI causes race conditions and blocks I/O.
-    It MUST remain a synchronous `def`.
+    Thesis-Aligned: Synchronous State-Machine Parser with Brace-Aware Look-ahead.
+    
+    CRITICAL IMPROVEMENTS:
+    - Maintains chronological order (no deduplication)
+    - Injects line number ranges: (L:x-y) for multi-line, (L:x) for single-line
+    - Brace-aware look-ahead: Strips JS logic from inner text
+    - Fixes self-closing tag handling
+    - Fixes trailing JS debris in inner text
+    
+    This function is CPU-bound and MUST remain synchronous.
     """
-    parsed_nodes = []
+    raw_tags = []
     i = 0
     n = len(content)
 
     while i < n:
         if content[i] == '<':
-            # Check if it's a valid opening tag, closing tag, or fragment
             if i + 1 < n and (content[i + 1].isalpha() or content[i + 1] in ['/', '>']):
                 start = i
                 in_quotes = None
@@ -60,38 +71,86 @@ def extract_ast_nodes(content: str, filepath: str) -> list:
                 while j < n:
                     char = content[j]
 
-                    # Handle string literals to ignore brackets inside them
                     if char in ["'", '"', '`']:
                         if in_quotes == char:
-                            # Make sure it's not escaped
-                            if content[j - 1] != '\\':
+                            if j > 0 and content[j - 1] != '\\':
                                 in_quotes = None
                         elif not in_quotes:
                             in_quotes = char
                             
-                    # Handle JSX curly braces mapping (if not in quotes)
                     elif char == '{' and not in_quotes:
                         brace_depth += 1
                     elif char == '}' and not in_quotes:
-                        brace_depth -= 1
+                        brace_depth = max(0, brace_depth - 1)
                         
-                    # Find the closing bracket of the tag
                     elif char == '>' and not in_quotes and brace_depth == 0:
-                        snippet = content[start:j + 1].strip()
-                        # Only add meaningful snippets, ignore pure closing tags or fragments
-                        if len(snippet) > 3 and not snippet.startswith('</'):
-                            # Basic line number calculation (can be optimized)
-                            line_number = content.count('\n', 0, start) + 1
-                            parsed_nodes.append({
-                                "file_path": filepath,
-                                "line_number": line_number,
-                                "code_snippet": snippet
-                            })
+                        tag_string = content[start:j + 1]
+                        
+                        # Calculate line ranges
+                        start_line = content.count('\n', 0, start) + 1
+                        end_line = content.count('\n', 0, j) + 1
+
+                        lookahead_info = ""
+
+                        # Brace-aware look-ahead for inner text (skip JS logic)
+                        if not tag_string.strip().endswith('/>'):
+                            k = j + 1
+                            inner_content = ""
+                            lookahead_brace_depth = 0
+
+                            while k < n and content[k] != '<':
+                                la_char = content[k]
+
+                                if la_char == '{':
+                                    lookahead_brace_depth += 1
+                                elif la_char == '}':
+                                    lookahead_brace_depth = max(0, lookahead_brace_depth - 1)
+                                elif lookahead_brace_depth == 0:
+                                    inner_content += la_char
+                                k += 1
+
+                            stripped_inner = inner_content.strip()
+                            if stripped_inner:
+                                # Remove trailing JS debris: ];,}])
+                                clean_text = re.sub(r'^[\]\};,\s]+|[\]\};,\s]+$', '', stripped_inner)
+                                if clean_text:
+                                    clean_text = " ".join(clean_text.split())
+                                    lookahead_info = f" | [Text: {clean_text}]"
+
+                        raw_tags.append((tag_string, start_line, end_line, lookahead_info))
                         i = j
                         break
                     j += 1
         i += 1
-        
+
+    # Depth tracking (silent closing tags)
+    parsed_nodes = []
+    current_depth = 0
+
+    for tag_string, s_line, e_line, lookahead_info in raw_tags:
+        clean_tag = " ".join(tag_string.split())
+
+        if clean_tag.startswith("</"):
+            current_depth = max(0, current_depth - 1)
+        else:
+            node_depth = current_depth + 1
+
+            # Line range formatting
+            if s_line == e_line:
+                line_marker = f"(L:{s_line})"
+            else:
+                line_marker = f"(L:{s_line}-{e_line})"
+
+            formatted_node = f"[{node_depth}] {line_marker} {clean_tag}{lookahead_info}"
+            parsed_nodes.append({
+                "file_path": filepath,
+                "line_number": s_line,
+                "code_snippet": formatted_node
+            })
+
+            if not clean_tag.endswith("/>") and clean_tag != "<>":
+                current_depth += 1
+
     return parsed_nodes
 
 

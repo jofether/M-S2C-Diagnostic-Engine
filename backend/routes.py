@@ -12,7 +12,7 @@ from fastapi import UploadFile, File, Form
 
 from config import logger, app_state
 from repository import clone_repository
-from indexer import build_index_from_repo, reindex_retriever, get_index_status
+from indexer import build_index_sync, reindex_retriever, get_index_status
 from utils import compute_gating_weight, generate_smart_results
 
 
@@ -96,7 +96,7 @@ def setup_routes(app, retriever, pytorch_available):
             
             # Step 2 & 3: Build index from cloned repo
             print("\n🔍 Extracting components and building index...")
-            index_dict = build_index_from_repo(temp_dir)
+            index_dict = build_index_sync(temp_dir)
             
             if not index_dict:
                 return {
@@ -127,7 +127,7 @@ def setup_routes(app, retriever, pytorch_available):
             global global_indexed_data
             global_indexed_data = index_dict
             print(f"\n🔄 Updating global index...")
-            await reindex_retriever(retriever, index_dict, pytorch_available)
+            await reindex_retriever(retriever, index_dict)
             
             # Step 5: Cache to disk
             cache_path = "indexed_repository.json"
@@ -210,7 +210,7 @@ def setup_routes(app, retriever, pytorch_available):
     
     
     @app.post("/api/diagnose")
-    async def diagnose_bug(bug_description: str = Form(...), screenshot: UploadFile = File(...)):
+    async def diagnose_bug(bug_description: str = Form(...), screenshot: UploadFile = File(None)):
         """
         Performs semantic code retrieval on the indexed repository.
         Uses keyword-based search on actual repository files.
@@ -218,23 +218,39 @@ def setup_routes(app, retriever, pytorch_available):
         global global_indexed_data
         
         # 1. Read the uploaded image as raw bytes (Fix #3 in ms2c.py handles PIL conversion)
-        image_bytes = await screenshot.read()
-            
+        image_bytes = await screenshot.read() if screenshot else None
+        temp_image_path = None
+        
         try:
             print(f"\n{'='*60}")
             print(f"🔍 DIAGNOSING BUG")
             print(f"{'='*60}")
             print(f"📝 Query: {bug_description[:80]}...")
-            print(f"🖼️  Visual: {screenshot.filename} ({len(image_bytes)} bytes)")
+            if screenshot:
+                print(f"🖼️  Visual: {screenshot.filename} ({len(image_bytes)} bytes)")
+            else:
+                print(f"🖼️  Visual: (no screenshot provided)")
             print(f"📦 Repository: {app_state.indexed_repo_url}")
             print(f"📊 Indexed: {app_state.file_count} files, {app_state.snippet_count} snippets")
+            
+            # CRITICAL FIX: Save image bytes to temp file for ViT processing
+            # compute_visual_quality() needs a file path to analyze with PIL
+            if image_bytes:
+                temp_image_path = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
+                with open(temp_image_path, 'wb') as temp_f:
+                    temp_f.write(image_bytes)
+                logger.info(f"🖼️  Saved screenshot to temp: {temp_image_path}")
+            
             print(f"💾 Global indexed data has {len(global_indexed_data)} files")
             print(f"🧠 Retriever has {len(retriever.unique_files)} files")
             
             # Log to file
             logger.info(f"\n🔍 DIAGNOSING BUG")
             logger.info(f"📝 Query: {bug_description[:80]}...")
-            logger.info(f"🖼️  Visual: {screenshot.filename} ({len(image_bytes)} bytes)")
+            if screenshot:
+                logger.info(f"🖼️  Visual: {screenshot.filename} ({len(image_bytes)} bytes)")
+            else:
+                logger.info(f"🖼️  Visual: (no screenshot provided)")
             logger.info(f"📦 Repository: {app_state.indexed_repo_url}")
             logger.info(f"📊 Indexed: {app_state.file_count} files, {app_state.snippet_count} snippets")
             logger.info(f"💾 Global indexed data has {len(global_indexed_data)} files")
@@ -289,6 +305,7 @@ def setup_routes(app, retriever, pytorch_available):
                 print(f"🔍 Searching {len(retriever.global_corpus)} code snippets...")
                 
                 # Compute MULTIMODAL gating weight (text + visual)
+                # CRITICAL: Pass temp file path for ViT image analysis
                 alpha_text, alpha_visual = compute_gating_weight(cleaned_query, image_path=temp_image_path)
                 logger.info(f"🎯 MULTIMODAL Gating Weights: Text={alpha_text:.4f}, Visual={alpha_visual:.4f}")
                 
@@ -296,79 +313,69 @@ def setup_routes(app, retriever, pytorch_available):
                     top_results = []
                     results = []
                     
-                    # Use semantic search via retriever to get ranked results
-                    print(f"🔍 Performing semantic search on {len(retriever.global_corpus)} snippets...")
-                    logger.info(f"🔍 Performing semantic search on {len(retriever.global_corpus)} snippets...")
+                    # Use 4-stage thesis-aligned pipeline via retriever
+                    print(f"🔍 Performing 4-stage retrieval on {len(retriever.global_corpus)} snippets...")
+                    logger.info(f"🔍 Performing 4-stage retrieval on {len(retriever.global_corpus)} snippets...")
+                    logger.info(f"   Embedded nodes count: {len(retriever.embedded_nodes)}")
+                    logger.info(f"   Query: {cleaned_query[:80]}...")
+                    if target_file:
+                        logger.info(f"   Target file: {target_file}")
                     
-                    semantic_results, alpha_val = retriever.retrieve_top_k(
+                    # Call 4-stage pipeline (retrieve_top_k handles all stages internally)
+                    semantic_results = retriever.retrieve_top_k(
                         text_query=cleaned_query,
-                        target_key=None,
-                        image_path=image_bytes,  # Pass raw bytes directly (Fix #3 in ms2c.py handles PIL conversion)
-                        k=300,  # Get many results
-                        mode="multimodal",
-                        scope="file"
+                        target_file=target_file,  # Will be used in Stage 2 (Document Filtration) and Stage 4 (Boosting)
+                        image_path=temp_image_path,  # Path to temp image (Stage 3 uses this for ViT)
+                        k=10  # Directly request top 10
                     )
                     
-                    # If target file is specified, prioritize results from that file
-                    if target_file:
-                        print(f"🎯 Target file specified: {target_file}")
-                        logger.info(f"🎯 Target file specified: {target_file}")
-                        
-                        # Split semantic results into target and non-target
-                        target_results = [r for r in semantic_results if target_file in r[0]]
-                        other_results = [r for r in semantic_results if target_file not in r[0]]
-                        
-                        print(f"📊 Semantic search returned {len(target_results)} from target file, {len(other_results)} from others")
-                        logger.info(f"📊 Semantic search returned {len(target_results)} from target file, {len(other_results)} from others")
-                        
-                        # Combine: prioritize target file results, then fill with others
-                        combined = target_results[:10]
-                        if len(combined) < 10:
-                            combined.extend(other_results[:10 - len(combined)])
-                        
-                        top_results = combined
-                    else:
-                        # No target file - just use top semantic results
-                        top_results = semantic_results[:10]
+                    print(f"✅ 4-Stage pipeline returned {len(semantic_results)} results")
+                    logger.info(f"✅ 4-Stage pipeline returned {len(semantic_results)} results")
+                    
+                    if len(semantic_results) == 0:
+                        logger.warning(f"⚠️  EMPTY RESULTS - Retriever index may be empty or query not matching")
+                        logger.warning(f"   embedded_nodes: {len(retriever.embedded_nodes)}")
+                        logger.warning(f"   global_corpus: {len(retriever.global_corpus)}")
+                        logger.warning(f"   query: {cleaned_query[:100]}")
+                    
+                    # Results are already ranked by all 4 stages
+                    top_results = semantic_results
                     
                     print(f"✅ Will display {len(top_results)} results")
                     logger.info(f"✅ Will display {len(top_results)} results")
                     
-                    # Format results from indexed data to match frontend expectations
+                    # Format results from 4-stage pipeline to match frontend expectations
                     logger.info(f"📤 PROCESSING {len(top_results)} results for display")
                     print(f"📤 PROCESSING {len(top_results)} results for display")
                     
                     if len(top_results) == 0:
-                        print(f"⚠️  No results from semantic search, attempting fallback...")
-                        logger.warning(f"⚠️  No results from semantic search, attempting fallback...")
-                        results = generate_smart_results(cleaned_query, app_state.indexed_repo_url)
+                        print(f"⚠️  No results from 4-stage pipeline")
+                        logger.warning(f"⚠️  No results from 4-stage pipeline")
                     else:
-                        for idx, item in enumerate(top_results):
+                        for idx, (file_path, snippet) in enumerate(top_results):
                             if len(results) >= 10:  # Stop once we have 10
                                 break
                             try:
-                                # Unpack tuple (file_path, snippet)
-                                if isinstance(item, tuple) and len(item) >= 2:
-                                    file_path, snippet = item[0], item[1]
-                                else:
-                                    logger.warning(f"⚠️  Unexpected result format at index {idx}: {type(item)}")
-                                    continue
-                                
-                                # Extract filename and line numbers from file_path like "path/file.jsx (Lines X-Y)"
+                                # Extract filename
                                 import re
-                                line_match = re.search(r'\(Lines\s+(\d+)-(\d+)\)', file_path)
-                                lines = f"{line_match.group(1)}-{line_match.group(2)}" if line_match else "?"
+                                file_name = file_path.split('/')[-1]
                                 
-                                # Extract just the filename
-                                file_name = file_path.split('/')[-1].split(' ')[0]
+                                # Extract line numbers if present in filename (e.g., "App.jsx (L:50-75)")
+                                line_match = re.search(r'\(L:(\d+)(?:-(\d+))?\)', file_path)
+                                if line_match:
+                                    start = line_match.group(1)
+                                    end = line_match.group(2) or start
+                                    lines = f"{start}-{end}"
+                                else:
+                                    lines = "?"
                                 
                                 formatted_result = {
                                     "name": file_name,
                                     "file": file_path,
                                     "lines": lines,
-                                    "code": snippet[:500].strip(),
+                                    "code": snippet.strip(),
                                     "explanation": f"Found in {file_name} - relevant code snippet",
-                                    "confidence": 0.85 + (idx * 0.05)  # Decrease confidence for lower-ranked results
+                                    "confidence": 0.95 - (idx * 0.05)  # Decrease confidence for lower-ranked results
                                 }
                                 results.append(formatted_result)
                                 logger.info(f"   Result {idx+1}: {file_path}")
@@ -379,32 +386,12 @@ def setup_routes(app, retriever, pytorch_available):
                                 traceback.print_exc()
                                 continue
                     
-                    print(f"✅ Retrieved {len(results)} results from repository")
-                    logger.info(f"✅ Retrieved {len(results)} results from repository")
-                    
-                    # ENSURE TOP 10: If we have fewer than 10 results, supplement with smart results
-                    if len(results) < 10:
-                        print(f"⚠️  Only {len(results)} results from semantic search, supplementing with keyword-based results...")
-                        logger.info(f"⚠️  Only {len(results)} results from semantic search, supplementing with keyword-based results...")
-                        smart_results = generate_smart_results(cleaned_query, app_state.indexed_repo_url)
-                        
-                        # Filter out duplicates and add to reach 10
-                        existing_files = {r["file"] for r in results}
-                        results_needed = 10 - len(results)
-                        
-                        for smart_result in smart_results:
-                            if len(results) >= 10:
-                                break
-                            if smart_result["file"] not in existing_files:
-                                results.append(smart_result)
-                                existing_files.add(smart_result["file"])
-                        
-                        print(f"✅ Supplemented to {len(results)} total results")
-                        logger.info(f"✅ Supplemented to {len(results)} total results")
+                    print(f"✅ Retrieved {len(results)} results from 4-stage pipeline")
+                    logger.info(f"✅ Retrieved {len(results)} results from 4-stage pipeline")
                     
                 except Exception as e:
-                    print(f"❌ Search failed: {e}")
-                    logger.error(f"❌ Search failed: {e}")
+                    print(f"❌ 4-Stage pipeline failed: {e}")
+                    logger.error(f"❌ 4-Stage pipeline failed: {e}")
                     import traceback
                     traceback.print_exc()
                     print(f"🔄 Falling back to keyword matching...")
@@ -452,6 +439,15 @@ def setup_routes(app, retriever, pytorch_available):
                 "message": str(e),
                 "candidates": []
             }
+        
+        finally:
+            # CRITICAL: Clean up temporary image file
+            if temp_image_path and os.path.exists(temp_image_path):
+                try:
+                    os.remove(temp_image_path)
+                    logger.info(f"🧹 Cleaned up temp image: {temp_image_path}")
+                except Exception as e:
+                    logger.warning(f"⚠️  Failed to clean up temp image: {e}")
     
     
     @app.get("/api/health")

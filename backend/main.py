@@ -1,4 +1,4 @@
-﻿"""
+"""
 M-S2C Diagnostic Engine - Main FastAPI Application
 
 CRITICAL STARTUP REQUIREMENT:
@@ -101,6 +101,10 @@ async def lifespan(app: FastAPI):
     logger.info(f"📡 M-S2C Diagnostic Engine started - PRODUCTION MODE")
     logger.info(f"🧠 CodeBERT retriever ready")
     
+    # CRITICAL: Register routes AFTER retriever initialization
+    # This ensures routes can access the fully initialized retriever
+    setup_routes(app, global_retriever, True)
+    
     yield  # Request handling happens here
     
     # SHUTDOWN
@@ -135,9 +139,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register all routes with the global retriever instance
-# Note: PYTORCH_AVAILABLE is guaranteed true at this point (exit(1) on import failure)
-setup_routes(app, global_retriever, True)
+# Routes registered during lifespan startup (after retriever initialization)
 
 
 
