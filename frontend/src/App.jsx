@@ -276,8 +276,8 @@ function App() {
         type: 'result',
         candidates: data.candidates || [],
         alphaWeights: {
-          text: Math.round((data.alpha_text || 0.5) * 100),
-          visual: Math.round((data.alpha_visual || 0.5) * 100),
+          text: Math.round((data.alpha_text !== undefined ? data.alpha_text : 0.5) * 100),
+          visual: Math.round((data.alpha_visual !== undefined ? data.alpha_visual : 0.5) * 100),
         },
       }
       setConversationHistory(prev => [...prev, resultMessage])
@@ -292,8 +292,8 @@ function App() {
         resultCount: data.candidates ? data.candidates.length : 0,
         candidates: data.candidates || [],
         alphaWeights: {
-          text: Math.round((data.alpha_text || 0.5) * 100),
-          visual: Math.round((data.alpha_visual || 0.5) * 100),
+          text: Math.round((data.alpha_text !== undefined ? data.alpha_text : 0.5) * 100),
+          visual: Math.round((data.alpha_visual !== undefined ? data.alpha_visual : 0.5) * 100),
         },
         image: imagePreview,
       }
@@ -1063,13 +1063,29 @@ function QueryState({
                                           </p>
                                         )}
                                         {candidate.code && (
-                                          <pre className={`text-xs mb-2 p-2 rounded overflow-auto max-h-24 break-words ${
-                                            darkMode
-                                              ? 'bg-slate-700/50 border border-slate-600 text-slate-300'
-                                              : 'bg-slate-100 border border-slate-300 text-slate-700'
-                                          }`}>
-                                            {candidate.code}
-                                          </pre>
+                                          <div className="relative">
+                                            <button
+                                              onClick={() => {
+                                                if (candidate && candidate.code) {
+                                                  navigator.clipboard.writeText(candidate.code);
+                                                }
+                                              }}
+                                              className={`absolute -top-7 right-1 px-2 py-1 text-xs rounded font-semibold transition-all ${
+                                                darkMode
+                                                  ? 'bg-slate-600 hover:bg-slate-500 text-white'
+                                                  : 'bg-slate-300 hover:bg-slate-400 text-slate-900'
+                                              }`}
+                                            >
+                                              📋 Copy
+                                            </button>
+                                            <pre className={`text-xs mb-2 p-2 rounded overflow-auto max-h-24 break-words ${
+                                              darkMode
+                                                ? 'bg-slate-700/50 border border-slate-600 text-slate-300'
+                                                : 'bg-slate-100 border border-slate-300 text-slate-700'
+                                            }`}>
+                                              {candidate.code}
+                                            </pre>
+                                          </div>
                                         )}
                                         {candidate.explanation && (
                                           <p className={`text-xs break-words ${
@@ -1265,7 +1281,7 @@ function QueryState({
                   <label className={`text-xs font-semibold block mb-1 ${
                     darkMode ? 'text-slate-400' : 'text-slate-600'
                   }`}>
-                    🗂️ File (optional)
+                    🗂️ Target File
                   </label>
                   <select
                     value={targetFileHint}
