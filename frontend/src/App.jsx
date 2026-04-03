@@ -184,7 +184,7 @@ function App() {
       // CRITICAL: Append target file hint to bug description if selected
       let finalDescription = bugDescription.trim()
       if (targetFileHint && targetFileHint.trim()) {
-        finalDescription = `${finalDescription} [Context: ${targetFileHint}]`
+        finalDescription = `[${targetFileHint}] - ${finalDescription}`
       }
       
       formData.append('bug_description', finalDescription)
