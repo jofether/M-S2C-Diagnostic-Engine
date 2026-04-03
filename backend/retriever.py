@@ -393,6 +393,12 @@ class MS2CRetriever:
         try:
             top_k_values, top_k_indices = torch.topk(final_scores_boosted, actual_k)
             
+            logger.info(f"🔍 TOP-K SCORES DEBUG:")
+            for rank, (idx_in_filtered, score) in enumerate(zip(top_k_indices.tolist(), top_k_values.tolist())):
+                actual_idx = valid_indices[idx_in_filtered]
+                file_path, code = self.global_corpus[actual_idx]
+                logger.info(f"  Rank {rank+1}: score={score:.4f} | {file_path[:60]}")
+            
             results = []
             for idx_in_filtered, score in zip(top_k_indices.tolist(), top_k_values.tolist()):
                 actual_idx = valid_indices[idx_in_filtered]
