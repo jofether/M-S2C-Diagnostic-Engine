@@ -1017,12 +1017,54 @@ function QueryState({
                                             {candidate.explanation}
                                           </p>
                                         )}
-                                        {candidate.confidence && (
-                                          <p className={`text-xs mt-2 font-semibold ${
-                                            darkMode ? 'text-indigo-300' : 'text-indigo-600'
+                                        {/* Input Quality / Contribution Metrics */}
+                                        {resultItem.alphaWeights && (
+                                          <div className={`text-xs mt-3 pt-3 border-t ${
+                                            darkMode ? 'border-slate-700' : 'border-slate-300'
                                           }`}>
-                                            Confidence: {Math.round(candidate.confidence * 100)}%
-                                          </p>
+                                            <p className={`font-semibold mb-2 ${
+                                              darkMode ? 'text-slate-300' : 'text-slate-700'
+                                            }`}>
+                                              Input Quality
+                                            </p>
+                                            <div className="space-y-1.5">
+                                              <div className="flex items-center justify-between">
+                                                <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
+                                                  📝 Bug Description
+                                                </span>
+                                                <span className={`font-semibold ${
+                                                  darkMode ? 'text-blue-300' : 'text-blue-600'
+                                                }`}>
+                                                  {resultItem.alphaWeights.text}%
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center justify-between">
+                                                <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
+                                                  📸 Screenshot
+                                                </span>
+                                                <span className={`font-semibold ${
+                                                  darkMode ? 'text-purple-300' : 'text-purple-600'
+                                                }`}>
+                                                  {resultItem.alphaWeights.visual}%
+                                                </span>
+                                              </div>
+                                            </div>
+                                            {/* Two-color Progress Bar */}
+                                            <div className={`flex h-2 rounded-full overflow-hidden mt-2 border ${
+                                              darkMode
+                                                ? 'bg-slate-700 border-slate-600'
+                                                : 'bg-slate-200 border-slate-300'
+                                            }`}>
+                                              <div
+                                                className="bg-blue-500"
+                                                style={{ width: `${resultItem.alphaWeights.text}%` }}
+                                              />
+                                              <div
+                                                className="bg-purple-500"
+                                                style={{ width: `${resultItem.alphaWeights.visual}%` }}
+                                              />
+                                            </div>
+                                          </div>
                                         )}
                                       </div>
                                       <p className={`text-xs mt-3 text-center ${
