@@ -16,7 +16,7 @@ from contextlib import asynccontextmanager
 
 # Import all modules
 from config import logger, app_state
-from routes import setup_routes
+from routes import setup_routes, index_progress_state
 
 # Global model instance (loaded once at startup)
 global_retriever = None

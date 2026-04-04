@@ -7,8 +7,9 @@ import sys
 import json
 import shutil
 import tempfile
+import asyncio
 from datetime import datetime
-from fastapi import UploadFile, File, Form
+from fastapi import UploadFile, File, Form, WebSocket, WebSocketDisconnect
 
 from config import logger, app_state
 from repository import clone_repository
@@ -18,6 +19,15 @@ from utils import compute_gating_weight, generate_smart_results
 
 # Global data storage
 global_indexed_data = {}
+
+# Global progress state for WebSocket-based progress streaming
+index_progress_state = {
+    "is_indexing": False,
+    "current_message": "",
+    "progress_percent": 0,
+    "total_files": 0,
+    "processed_files": 0
+}
 
 
 def extract_target_file(bug_description: str) -> tuple:
@@ -58,6 +68,101 @@ def setup_routes(app, retriever, pytorch_available):
             "status": "ready" if get_index_status() else "indexing"
         }
     
+    @app.get("/api/index-progress")
+    async def get_progress():
+        """
+        Returns the current indexing progress state.
+        Used by the polling fallback when WebSocket fails.
+        
+        Returns:
+            JSON with current_message, progress_percent, is_complete
+        """
+        return {
+            "message": index_progress_state["current_message"] or "Initializing...",
+            "percent": index_progress_state["progress_percent"],
+            "is_complete": get_index_status()
+        }
+    
+    @app.websocket("/ws/index-progress")
+    async def websocket_index_progress(websocket: WebSocket):
+        """
+        WebSocket endpoint for real-time indexing progress streaming.
+        Broadcasting mode: Client connects and receives progress updates as they happen.
+        
+        Sends JSON messages with:
+          - message: Current progress description
+          - percent: Progress percentage (0-100)
+          - is_complete: Boolean indicating if indexing is done
+        """
+        print(f"\n{'='*60}")
+        print(f"🔌 WebSocket /ws/index-progress CONNECTION ATTEMPT")
+        print(f"{'='*60}")
+        
+        websocket_accepted = False
+        
+        try:
+            # CRITICAL: Accept connection first
+            await websocket.accept()
+            websocket_accepted = True
+            print(f"✅ WebSocket connection ACCEPTED")
+            logger.info("🔌 WebSocket client connected for progress streaming")
+            
+            # Send initial state immediately
+            initial_state = {
+                "message": index_progress_state["current_message"] or "Initializing...",
+                "percent": index_progress_state["progress_percent"],
+                "is_complete": False
+            }
+            print(f"📤 Sending INITIAL state: {initial_state}")
+            await websocket.send_json(initial_state)
+            
+            # Track last sent state to avoid spam
+            last_sent_state = None
+            
+            while True:
+                # Small delay to avoid overwhelming the client
+                await asyncio.sleep(0.5)
+                
+                # Read current state
+                current_state = {
+                    "message": index_progress_state["current_message"],
+                    "percent": index_progress_state["progress_percent"],
+                    "is_complete": get_index_status()
+                }
+                
+                # Only send if state changed
+                if current_state != last_sent_state:
+                    print(f"📤 Sending progress update: percent={current_state['percent']}, message={current_state['message'][:40] if current_state['message'] else 'none'}")
+                    await websocket.send_json(current_state)
+                    last_sent_state = current_state
+                
+                # If indexing is complete, close connection
+                if get_index_status():
+                    print(f"✅ Indexing complete, closing WebSocket")
+                    logger.info("✅ Indexing complete, closing WebSocket after final message")
+                    await websocket.close(code=1000, reason="Indexing complete")
+                    break
+                
+        except WebSocketDisconnect:
+            logger.info("🔌 WebSocket client disconnected")
+            print(f"🔌 WebSocket client disconnected")
+        except Exception as e:
+            logger.error(f"❌ WebSocket error: {e}")
+            print(f"❌ WebSocket error: {e}")
+            print(f"❌ Exception type: {type(e).__name__}")
+            print(f"❌ Exception message: {str(e)}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+            
+            # Only try to close if we accepted the connection
+            if websocket_accepted:
+                try:
+                    await websocket.close(code=1011, reason=f"Internal error: {str(e)[:100]}")
+                except Exception as close_err:
+                    print(f"⚠️  Error closing WebSocket: {close_err}")
+                    logger.warning(f"⚠️  Could not close WebSocket: {close_err}")
+    
+    
     @app.post("/api/index-repository")
     async def index_repository(repo_url: str = Form(...)):
         """
@@ -73,9 +178,22 @@ def setup_routes(app, retriever, pytorch_available):
             JSON response with indexing statistics
         """
         
+        # CRITICAL: Reset progress state for new indexing run
+        global index_progress_state
+        index_progress_state["is_indexing"] = True
+        index_progress_state["current_message"] = ""
+        index_progress_state["progress_percent"] = 0
+        index_progress_state["total_files"] = 0
+        index_progress_state["processed_files"] = 0
+        
         temp_dir = None
         
         try:
+            # Initialize progress tracking for WebSocket
+            index_progress_state["is_indexing"] = True
+            index_progress_state["current_message"] = "Initializing repository clone..."
+            index_progress_state["progress_percent"] = 0
+            
             print(f"\n{'='*60}")
             print(f"📥 INDEXING REPOSITORY: {repo_url}")
             print(f"{'='*60}")
@@ -85,8 +203,11 @@ def setup_routes(app, retriever, pytorch_available):
             print(f"📁 Temp directory: {temp_dir}")
             
             # Step 1: Clone repository
+            index_progress_state["current_message"] = "Cloning repository..."
+            index_progress_state["progress_percent"] = 10
             clone_success = clone_repository(repo_url, temp_dir)
             if not clone_success:
+                index_progress_state["is_indexing"] = False
                 return {
                     "status": "error",
                     "message": "Failed to clone repository. Check URL and Git installation.",
@@ -95,10 +216,13 @@ def setup_routes(app, retriever, pytorch_available):
                 }
             
             # Step 2 & 3: Build index from cloned repo
+            index_progress_state["current_message"] = "Parsing ASTs with Tree-sitter..."
+            index_progress_state["progress_percent"] = 30
             print("\n🔍 Extracting components and building index...")
             index_dict = build_index_sync(temp_dir)
             
             if not index_dict:
+                index_progress_state["is_indexing"] = False
                 return {
                     "status": "warning",
                     "message": "Repository cloned but no frontend files found. Check repository structure.",
@@ -124,12 +248,22 @@ def setup_routes(app, retriever, pytorch_available):
                 logger.info(f"   ... and {len(index_dict) - 10} more files")
             
             # Step 4: Update global indexed data and re-encode through retriever
+            index_progress_state["current_message"] = "Generating CodeBERT Embeddings..."
+            index_progress_state["progress_percent"] = 60
             global global_indexed_data
             global_indexed_data = index_dict
             print(f"\n🔄 Updating global index...")
+            logger.info(f"🔄 Starting CodeBERT embedding generation for {len(index_dict)} files...")
             await reindex_retriever(retriever, index_dict)
+            print(f"✅ CodeBERT embeddings generated")
+            logger.info(f"✅ CodeBERT embeddings complete")
             
-            # Step 5: Cache to disk
+            # Step 5: Cache to disk - FAISS population stage
+            index_progress_state["current_message"] = "Populating FAISS Vector Database..."
+            index_progress_state["progress_percent"] = 90
+            print(f"\n💾 Populating FAISS vector database...")
+            logger.info(f"💾 Starting FAISS database population...")
+            
             cache_path = "indexed_repository.json"
             cache_data = {
                 "repo_url": repo_url,
@@ -145,13 +279,23 @@ def setup_routes(app, retriever, pytorch_available):
             with open(cache_path, "w") as f:
                 json.dump(cache_data, f, indent=2)
             
-            print(f"✅ Index cached to: {cache_path}")
+            print(f"✅ FAISS database populated and cached to: {cache_path}")
+            logger.info(f"✅ FAISS database ready, index cached to: {cache_path}")
+            
+            # Hold 90% for 500ms to ensure clients (polling at 250ms) definitely see it
+            await asyncio.sleep(0.5)
             
             # Update app state
             app_state.set_repository(repo_url)
             app_state.is_indexed = True
             app_state.file_count = len(index_dict)
             app_state.snippet_count = total_snippets
+            
+            # Update progress to completion (NOW set to 100%)
+            index_progress_state["current_message"] = "Indexing Complete!"
+            index_progress_state["progress_percent"] = 100
+            print(f"\n✅ INDEXING COMPLETE - All 100% done!")
+            logger.info(f"✅ Indexing pipeline complete: {len(index_dict)} files, {total_snippets} snippets")
             
             print(f"\n✅ INDEXING COMPLETE")
             print(f"{'='*60}\n")
@@ -197,6 +341,8 @@ def setup_routes(app, retriever, pytorch_available):
                 "snippets_indexed": 0
             }
             print(f"❌ RETURNING ERROR RESPONSE: {error_response}")
+            # Reset progress on error
+            index_progress_state["is_indexing"] = False
             return error_response
         
         finally:
@@ -207,6 +353,8 @@ def setup_routes(app, retriever, pytorch_available):
                     print(f"🗑️  Cleaned up temporary directory: {temp_dir}")
                 except Exception as e:
                     print(f"⚠️  Could not cleanup temp directory: {e}")
+            # Always reset progress state
+            index_progress_state["is_indexing"] = False
     
     
     @app.post("/api/diagnose")
@@ -233,13 +381,21 @@ def setup_routes(app, retriever, pytorch_available):
             print(f"📦 Repository: {app_state.indexed_repo_url}")
             print(f"📊 Indexed: {app_state.file_count} files, {app_state.snippet_count} snippets")
             
-            # CRITICAL FIX: Save image bytes to temp file for ViT processing
-            # compute_visual_quality() needs a file path to analyze with PIL
+            # CRITICAL OPTIMIZATION: Skip ViT encoding if no visual input
+            # When screenshot is absent, bypass Vision Transformer entirely to save GPU memory and inference time
             if image_bytes:
+                # Save image bytes to temp file for ViT processing
                 temp_image_path = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
                 with open(temp_image_path, 'wb') as temp_f:
                     temp_f.write(image_bytes)
                 logger.info(f"🖼️  Saved screenshot to temp: {temp_image_path}")
+                print(f"🎬 MULTIMODAL MODE: Using CodeBERT + ViT dual-stream (Mode 1)")
+            else:
+                # No screenshot provided: use text-only mode
+                # This completely bypasses the Vision Transformer forward pass
+                temp_image_path = None
+                print(f"📝 TEXT-ONLY MODE: Bypassing Vision Transformer, using CodeBERT only (Mode 2)")
+                logger.info(f"📝 TEXT-ONLY MODE: No screenshot provided - completely bypassing ViT forward pass")
             
             print(f"💾 Global indexed data has {len(global_indexed_data)} files")
             print(f"🧠 Retriever has {len(retriever.unique_files)} files")
@@ -257,8 +413,17 @@ def setup_routes(app, retriever, pytorch_available):
             logger.info(f"🧠 Retriever has {len(retriever.unique_files)} files")
             
             results = []
-            alpha_text = 0.5  # Default fallback
-            alpha_visual = 0.5
+            
+            # OPTIMIZATION: Initialize gating weights based on visual input availability
+            if image_bytes:
+                alpha_text = 0.5  # Default fallback for multimodal mode
+                alpha_visual = 0.5
+            else:
+                # TEXT-ONLY optimization: Hardcode gating weights to skip visual processing
+                alpha_text = 1.0  # Full weight to text
+                alpha_visual = 0.0  # No weight to visual
+                print(f"🔐 GATING NETWORK HARDCODED: alpha_text=1.0, alpha_visual=0.0 (text-only)")
+                logger.info(f"🔐 GATING NETWORK HARDCODED: Bypassing neural gating, using text-only weights")
             
             # Check if we have actual indexed data (not default dummy)
             is_real_index = len(global_indexed_data) > 3 or (
@@ -283,11 +448,17 @@ def setup_routes(app, retriever, pytorch_available):
             if not app_state.is_indexed:
                 print(f"⚠️  No repository indexed yet - using keyword fallback")
                 results = generate_smart_results(bug_description, app_state.indexed_repo_url)
-                alpha_text, alpha_visual = compute_gating_weight(bug_description, image_path=image_bytes)
+                # Only compute gating weights if we have a visual input
+                if image_bytes:
+                    alpha_text, alpha_visual = compute_gating_weight(bug_description, image_path=temp_image_path)
+                # else: use the already-set hardcoded values (1.0, 0.0)
             elif not is_real_index:
                 print(f"⚠️  Using default dummy index (no real repository indexed)")
                 results = generate_smart_results(bug_description, app_state.indexed_repo_url)
-                alpha_text, alpha_visual = compute_gating_weight(bug_description, image_path=image_bytes)
+                # Only compute gating weights if we have a visual input
+                if image_bytes:
+                    alpha_text, alpha_visual = compute_gating_weight(bug_description, image_path=temp_image_path)
+                # else: use the already-set hardcoded values (1.0, 0.0)
             else:
                 # Use the retriever with real indexed data
                 print(f"✅ Using real indexed repository data")
@@ -304,10 +475,15 @@ def setup_routes(app, retriever, pytorch_available):
                 
                 print(f"🔍 Searching {len(retriever.global_corpus)} code snippets...")
                 
-                # Compute MULTIMODAL gating weight (text + visual)
-                # CRITICAL: Pass temp file path for ViT image analysis
-                alpha_text, alpha_visual = compute_gating_weight(cleaned_query, image_path=temp_image_path)
-                logger.info(f"🎯 MULTIMODAL Gating Weights: Text={alpha_text:.4f}, Visual={alpha_visual:.4f}")
+                # OPTIMIZATION: Only compute gating weights via neural network if we have visual input
+                # For text-only queries, skip neural gating and use hardcoded weights (alpha_text=1.0, alpha_visual=0.0)
+                if image_bytes:
+                    # Multimodal mode: compute gating weight via neural network
+                    alpha_text, alpha_visual = compute_gating_weight(cleaned_query, image_path=temp_image_path)
+                    logger.info(f"🎯 NEURAL GATING: Text={alpha_text:.4f}, Visual={alpha_visual:.4f}")
+                else:
+                    # Text-only mode: already hardcoded to 1.0 and 0.0
+                    logger.info(f"🎯 TEXT-ONLY: alpha_text=1.0, alpha_visual=0.0 (ViT bypassed)")
                 
                 try:
                     top_results = []

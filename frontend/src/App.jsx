@@ -20,7 +20,8 @@ function App() {
   const [carouselIndex, setCarouselIndex] = useState({}) // Track carousel index for each result
   const [menuOpen, setMenuOpen] = useState(false) // Burger menu toggle
   const [queryHistory, setQueryHistory] = useState([]) // Query history for sidebar
-  const [statusPollInterval, setStatusPollInterval] = useState(null) // Track polling interval
+  const [progressPercent, setProgressPercent] = useState(0) // Track progress percentage
+  const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState(null) // ETA in seconds
   const chatEndRef = useRef(null) // Files from indexed repo
 
   // Load query history from localStorage on mount and save repo context
@@ -49,78 +50,261 @@ function App() {
     console.log('   Content:', indexedFiles)
   }, [indexedFiles])
 
-  // Simulate repository indexing with cycling messages
-  useEffect(() => {
-    if (currentState !== 'LOADING') return
+  // Removed: Cycling messages effect
+  // Now we get real stage messages from backend via WebSocket/polling
+  // The LoadingState component displays whatever setLoadingMessage sets
 
-    const messages = [
-      'Parsing ASTs with Tree-sitter...',
-      'Generating CodeBERT Embeddings...',
-      'Populating FAISS Vector Database...',
-    ]
-
-    let messageIndex = 0
-    const messageInterval = setInterval(() => {
-      messageIndex = (messageIndex + 1) % messages.length
-      setLoadingMessage(messages[messageIndex])
-    }, 1500)
-
-    return () => {
-      clearInterval(messageInterval)
-    }
-  }, [currentState])
-
-  // Poll index status until embeddings are ready
+  // WebSocket connection for real-time indexing progress updates
+  // HYBRID APPROACH: Try WebSocket first, fall back to polling if it fails
   useEffect(() => {
     if (!repositoryIndexed || isIndexReady) {
-      // Stop polling if not indexed or already ready
-      if (statusPollInterval) {
-        clearInterval(statusPollInterval)
-        setStatusPollInterval(null)
-      }
+      // Stop progress tracking if not indexed or already ready
       return
     }
 
-    console.log('🔄 Starting index status polling...')
+    console.log('🔌 Establishing progress tracking (WebSocket with polling fallback)...')
     
-    const pollStatus = async () => {
-      try {
-        const response = await fetch('http://localhost:8000/api/index-status')
-        if (response.ok) {
+    // Initialize progress tracking
+    setProgressPercent(0)
+    setEstimatedTimeRemaining(null)
+    
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const wsUrl = `${wsProtocol}//localhost:8000/ws/index-progress`
+    console.log('🔌 WebSocket URL:', wsUrl)
+    
+    // Declare variables outside try block so they're accessible in handlers and cleanup
+    let ws = null
+    let startTime = Date.now()
+    let wsConnected = false
+    let pollingInterval = null
+    let lastProgressPercent = 0
+    let lastProgressTime = Date.now()
+    let smoothedETA = null // Exponential moving average for smooth ETA
+    
+    // === POLLING FALLBACK FUNCTION ===
+    const startPolling = () => {
+      console.log('📊 WebSocket failed - switching to polling mode for progress updates')
+      
+      pollingInterval = setInterval(async () => {
+        try {
+          const response = await fetch('http://localhost:8000/api/index-progress')
           const data = await response.json()
-          console.log('📊 Index status:', data)
           
-          if (data.is_index_ready) {
-            console.log('✅ Index is ready! Embeddings complete.')
+          console.log(`📊 Polling: percent=${data.percent}%, message=${data.message}`)
+          
+          // Use REAL progress data from backend (not estimated)
+          setProgressPercent(data.percent)
+          setLoadingMessage(data.message || 'Indexing repository...')
+          
+          // Calculate ETA with SMOOTHING to prevent jumps
+          if (data.percent > 0 && data.percent < 100) {
+            const nowTime = Date.now()
+            const timeSinceLastPoll = (nowTime - lastProgressTime) / 1000 // seconds
+            const progressSinceLastPoll = data.percent - lastProgressPercent
+            
+            let calculatedETA = null
+            
+            // Use rate from last poll only (more accurate for recent progress)
+            if (timeSinceLastPoll > 0 && progressSinceLastPoll > 0) {
+              const recentRate = progressSinceLastPoll / timeSinceLastPoll // %/sec
+              const remainingPercent = 100 - data.percent
+              calculatedETA = Math.ceil(remainingPercent / recentRate)
+              console.log(`📊 Recent: +${progressSinceLastPoll}% in ${timeSinceLastPoll.toFixed(1)}s = ${recentRate.toFixed(2)}%/sec`)
+            } else {
+              // Fallback to overall rate if we don't have recent data
+              const elapsedMs = nowTime - startTime
+              const elapsedSec = Math.max(0.1, elapsedMs / 1000)
+              const overallRate = data.percent / elapsedSec
+              const remainingPercent = 100 - data.percent
+              calculatedETA = Math.ceil(remainingPercent / overallRate)
+              console.log(`📊 Overall: ${data.percent}% in ${elapsedSec.toFixed(1)}s = ${overallRate.toFixed(2)}%/sec`)
+            }
+            
+            // Apply exponential moving average to smooth ETA
+            // This prevents wild jumps and ensures smooth countdown
+            if (smoothedETA === null) {
+              // Initialize with calculated value
+              smoothedETA = calculatedETA
+            } else {
+              // Only allow ETA to decrease or stay same, never jump up significantly
+              smoothedETA = Math.min(smoothedETA, calculatedETA * 0.8 + smoothedETA * 0.2)
+            }
+            
+            const finalETA = Math.max(0, Math.ceil(smoothedETA))
+            console.log(`⏱️  ETA: ${finalETA}s (calculated: ${calculatedETA}s, smoothed: ${smoothedETA.toFixed(1)}s)`)
+            setEstimatedTimeRemaining(finalETA)
+            
+            // Update tracking for next poll
+            lastProgressPercent = data.percent
+            lastProgressTime = nowTime
+          } else if (data.percent === 0) {
+            smoothedETA = null
+            setEstimatedTimeRemaining(null)
+          }
+          
+          // Check if indexing is complete
+          if (data.is_complete) {
+            console.log('✅ Indexing complete (from polling)!')
+            setProgressPercent(100)
+            setEstimatedTimeRemaining(0)
             setIsIndexReady(true)
-            // Stop polling
-            if (statusPollInterval) {
-              clearInterval(statusPollInterval)
-              setStatusPollInterval(null)
+            clearInterval(pollingInterval)
+          }
+        } catch (err) {
+          console.error('Polling error:', err)
+        }
+      }, 250) // Poll every 250ms (4x per second) for better coverage of intermediate states
+    }
+    
+    try {
+      ws = new WebSocket(wsUrl)
+      
+      ws.onopen = () => {
+        console.log('✅ WebSocket connected to /ws/index-progress')
+        wsConnected = true
+        // Clear polling if WebSocket succeeds
+        if (pollingInterval) {
+          clearInterval(pollingInterval)
+          pollingInterval = null
+        }
+      }
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          console.log('📊 Progress update received:', {
+            message: data.message,
+            percent: data.percent,
+            is_complete: data.is_complete,
+          })
+          
+          // Update loading message with current progress
+          setLoadingMessage(data.message)
+          
+          // Update progress percentage
+          if (typeof data.percent === 'number') {
+            console.log(`📈 Setting progress to ${data.percent}%`)
+            setProgressPercent(data.percent)
+          } else {
+            console.warn(`⚠️  Progress percent not a number: ${typeof data.percent}`, data.percent)
+          }
+          
+          // Calculate ETA with SMOOTHING to prevent jumps
+          if (data.percent > 0 && data.percent < 100) {
+            const nowTime = Date.now()
+            const timeSinceLastUpdate = (nowTime - lastProgressTime) / 1000 // seconds
+            const progressSinceLastUpdate = data.percent - lastProgressPercent
+            
+            let calculatedETA = null
+            
+            // Use rate from last update (more accurate for recent progress)
+            if (timeSinceLastUpdate > 0 && progressSinceLastUpdate > 0) {
+              const recentRate = progressSinceLastUpdate / timeSinceLastUpdate // %/sec
+              const remainingPercent = 100 - data.percent
+              calculatedETA = Math.ceil(remainingPercent / recentRate)
+              console.log(`📊 Recent: +${progressSinceLastUpdate}% in ${timeSinceLastUpdate.toFixed(1)}s = ${recentRate.toFixed(2)}%/sec`)
+            } else {
+              // Fallback to overall rate if no recent delta
+              const elapsedMs = nowTime - startTime
+              const elapsedSec = Math.max(0.1, elapsedMs / 1000)
+              const overallRate = data.percent / elapsedSec
+              const remainingPercent = 100 - data.percent
+              calculatedETA = Math.ceil(remainingPercent / overallRate)
+              console.log(`📊 Overall: ${data.percent}% in ${elapsedSec.toFixed(1)}s = ${overallRate.toFixed(2)}%/sec`)
+            }
+            
+            // Apply exponential moving average to smooth ETA
+            // This prevents wild jumps and ensures smooth countdown
+            if (smoothedETA === null) {
+              // Initialize with calculated value
+              smoothedETA = calculatedETA
+            } else {
+              // Only allow ETA to decrease or stay same, never jump up significantly
+              smoothedETA = Math.min(smoothedETA, calculatedETA * 0.8 + smoothedETA * 0.2)
+            }
+            
+            const finalETA = Math.max(0, Math.ceil(smoothedETA))
+            console.log(`⏱️  ETA: ${finalETA}s (calculated: ${calculatedETA}s, smoothed: ${smoothedETA.toFixed(1)}s)`)
+            setEstimatedTimeRemaining(finalETA)
+            
+            // Update tracking for next update
+            lastProgressPercent = data.percent
+            lastProgressTime = nowTime
+          } else if (data.percent === 0) {
+            smoothedETA = null
+            setEstimatedTimeRemaining(null)
+          }
+          
+          // Check if indexing is complete
+          if (data.is_complete) {
+            console.log('✅ Indexing complete! Setting isIndexReady to true.')
+            setProgressPercent(100)
+            setEstimatedTimeRemaining(0)
+            setIsIndexReady(true)
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.close(1000, 'Indexing complete')
             }
           }
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error)
         }
-      } catch (error) {
-        console.error('Error polling index status:', error)
+      }
+      
+      ws.onerror = (error) => {
+        console.error('❌ WebSocket error:', error)
+        console.error('❌ WebSocket readyState:', ws.readyState)
+        if (!wsConnected && !pollingInterval) {
+          console.warn('⚠️  WebSocket connection failed - enabling polling fallback')
+          startPolling()
+        }
+      }
+      
+      ws.onclose = (event) => {
+        wsConnected = false
+        if (event.code === 1000) {
+          console.log('✅ WebSocket closed normally (indexing complete)')
+        } else {
+          console.log('⚠️  WebSocket closed:', event.code, event.reason)
+          // Start polling if connection closes unexpectedly and we're still waiting
+          if (!isIndexReady && !pollingInterval) {
+            console.warn('⚠️  WebSocket closed unexpectedly - switching to polling')
+            startPolling()
+          }
+        }
+      }
+    } catch (err) {
+      console.error('❌ Error creating WebSocket:', err)
+      console.error('❌ URL attempted:', wsUrl)
+      // Fall back to polling
+      startPolling()
+    }
+    
+    return () => {
+      try {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.close()
+        }
+      } catch (err) {
+        console.error('Error closing WebSocket:', err)
+      }
+      if (pollingInterval) {
+        clearInterval(pollingInterval)
       }
     }
-
-    // Poll every 2 seconds
-    const interval = setInterval(pollStatus, 2000)
-    setStatusPollInterval(interval)
-
-    // Also check immediately
-    pollStatus()
-
-    return () => {
-      clearInterval(interval)
-    }
-  }, [repositoryIndexed, isIndexReady, statusPollInterval])
+  }, [repositoryIndexed, isIndexReady])
 
   const handleIndexRepository = async () => {
     if (!repositoryUrl.trim()) return
 
     setCurrentState('LOADING')
+    
+    // Set as indexed IMMEDIATELY so WebSocket connects before backend starts
+    setRepositoryIndexed(true)
+    setIsIndexReady(false)  // Mark as not ready until indexing completes
+    
+    // Reset progress
+    setProgressPercent(0)
+    setEstimatedTimeRemaining(null)
 
     try {
       const formData = new FormData()
@@ -128,6 +312,7 @@ function App() {
 
       console.log('🔗 Attempting to fetch from:', 'http://localhost:8000/api/index-repository')
       console.log('📦 Repository URL:', repositoryUrl.trim())
+      console.log('🔌 WebSocket should be connecting now for real-time progress...')
 
       // Create an AbortController for timeout
       const controller = new AbortController()
@@ -183,9 +368,8 @@ function App() {
       
       setIndexedRepoName(repoName)
       setIndexedBranchName(branchName)
-      setRepositoryIndexed(true)
       
-      // Initialize isIndexReady from response (will be false initially, polling will update it)
+      // Initialize isIndexReady from response
       if (data.is_index_ready !== undefined) {
         console.log('📊 Backend is_index_ready:', data.is_index_ready)
         setIsIndexReady(data.is_index_ready)
@@ -214,6 +398,12 @@ function App() {
       if (error.name === 'AbortError') {
         errorMsg = 'Indexing timed out after 2 minutes. Repository might be too large.'
       }
+      
+      // Reset state on error
+      setRepositoryIndexed(false)
+      setIsIndexReady(false)
+      setProgressPercent(0)
+      setEstimatedTimeRemaining(null)
       
       alert(`Indexing failed: ${errorMsg}\n\nMake sure the backend is running on http://localhost:8000`)
       setCurrentState('QUERY')
@@ -470,6 +660,8 @@ function App() {
         <LoadingState
           message={loadingMessage}
           darkMode={darkMode}
+          progressPercent={progressPercent}
+          estimatedTimeRemaining={estimatedTimeRemaining}
         />
       )}
 
@@ -603,49 +795,191 @@ function InitialState({ repositoryUrl, setRepositoryUrl, onIndexRepository, dark
 // ============================================================================
 // STATE II: Loading State with Cycling Messages
 // ============================================================================
-function LoadingState({ message, darkMode }) {
+function LoadingState({ message, darkMode, progressPercent = 0, estimatedTimeRemaining = null }) {
+  // Define all indexing stages
+  const stages = [
+    { percent: 10, message: 'Cloning repository...' },
+    { percent: 30, message: 'Parsing ASTs with Tree-sitter...' },
+    { percent: 60, message: 'Generating CodeBERT Embeddings...' },
+    { percent: 90, message: 'Populating FAISS Vector Database...' },
+    { percent: 100, message: 'Indexing Complete!' }
+  ]
+  
+  // Determine current stage index
+  let currentStageIndex = 0
+  for (let i = stages.length - 1; i >= 0; i--) {
+    if (progressPercent >= stages[i].percent) {
+      currentStageIndex = i
+      break
+    }
+  }
+  
+  // Format estimated time remaining to human-readable
+  const formatTimeRemaining = (seconds) => {
+    if (seconds === null || seconds === undefined) return null
+    if (seconds === 0) return 'Almost done!'
+    if (seconds < 1) return '< 1 second remaining'
+    if (seconds < 60) return `${Math.ceil(seconds)} sec remaining`
+    const minutes = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    if (minutes === 1 && secs === 0) return '1 min remaining'
+    if (secs === 0) return `${minutes} min remaining`
+    return `${minutes} min ${Math.ceil(secs)} sec remaining`
+  }
+
+  // Determine stage based on message
+  const getStage = () => {
+    if (message.includes('clone') || message.includes('Cloning')) return { step: 1, total: 5, label: 'Step 1 of 5' }
+    if (message.includes('AST') || message.includes('Parsing')) return { step: 2, total: 5, label: 'Step 2 of 5' }
+    if (message.includes('CodeBERT') || message.includes('Embedding')) return { step: 3, total: 5, label: 'Step 3 of 5' }
+    if (message.includes('FAISS') || message.includes('Database')) return { step: 4, total: 5, label: 'Step 4 of 5' }
+    return { step: 5, total: 5, label: 'Step 5 of 5' }
+  }
+  
+  const stage = getStage()
+  const timeRemaining = formatTimeRemaining(estimatedTimeRemaining)
+
   return (
     <div className="flex items-center justify-center min-h-screen px-4">
-      <div className="w-full max-w-md text-center">
-        {/* Enhanced Spinner */}
-        <div className="flex justify-center mb-6">
-          <div className="relative w-20 h-20">
+      <div className="w-full max-w-md">
+        {/* Enhanced Spinner with Percentage */}
+        <div className="flex justify-center mb-8">
+          <div className="relative w-24 h-24">
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 rounded-full animate-spin" />
             <div className={`absolute inset-2 rounded-full ${
               darkMode ? 'bg-slate-800' : 'bg-slate-50'
             }`} />
             <div className="absolute inset-6 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full animate-pulse opacity-40" />
+            {/* Percentage in center */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className={`text-3xl font-bold ${
+                darkMode ? 'text-indigo-400' : 'text-indigo-600'
+              }`}>
+                {progressPercent}%
+              </span>
+            </div>
           </div>
         </div>
 
+        {/* Stage Indicator */}
+        <div className="text-center mb-6">
+          <p className={`text-xs font-semibold tracking-wide uppercase ${
+            darkMode ? 'text-slate-400' : 'text-slate-500'
+          }`}>
+            {stage.label}
+          </p>
+        </div>
+
+        {/* All Stages Timeline */}
+        <div className="mb-6 space-y-2 bg-slate-900/20 rounded-lg p-4">
+          {stages.map((stageItem, idx) => {
+            const isCompleted = progressPercent > stageItem.percent || (progressPercent === stageItem.percent && idx < stages.length - 1)
+            const isActive = currentStageIndex === idx
+            
+            return (
+              <div key={idx} className="flex items-center gap-3">
+                {/* Stage Circle */}
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                  isCompleted || isActive
+                    ? darkMode ? 'bg-indigo-500 text-white' : 'bg-indigo-600 text-white'
+                    : darkMode ? 'bg-slate-700 text-slate-400' : 'bg-slate-300 text-slate-600'
+                }`}>
+                  {isCompleted ? '✓' : idx + 1}
+                </div>
+                
+                {/* Stage Info */}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium truncate ${
+                    isActive
+                      ? darkMode ? 'text-indigo-300 font-semibold' : 'text-indigo-600 font-semibold'
+                      : isCompleted
+                        ? darkMode ? 'text-slate-300' : 'text-slate-700'
+                        : darkMode ? 'text-slate-500' : 'text-slate-500'
+                  }`}>
+                    {stageItem.message}
+                  </p>
+                </div>
+                
+                {/* Percentage Badge */}
+                <div className={`flex-shrink-0 px-2 py-1 rounded text-xs font-semibold ${
+                  isActive
+                    ? darkMode ? 'bg-indigo-500/30 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
+                    : isCompleted
+                      ? darkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-700'
+                      : darkMode ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-500'
+                }`}>
+                  {stageItem.percent}%
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
         {/* Loading Message with transition */}
-        <div className="min-h-12 flex items-center justify-center">
-          <p className={`text-lg font-semibold transition-opacity duration-500 ${
+        <div className="min-h-12 flex items-center justify-center mb-3">
+          <p className={`text-lg font-semibold transition-opacity duration-500 text-center ${
             darkMode ? 'text-white' : 'text-slate-700'
           }`}>
             {message}
           </p>
         </div>
 
+        {/* Time Remaining - Prominent */}
+        {timeRemaining && (
+          <div className="text-center mb-6">
+            <p className={`text-sm font-medium flex items-center justify-center gap-2 ${
+              darkMode ? 'text-indigo-400' : 'text-indigo-600'
+            }`}>
+              <svg className="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00-.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              </svg>
+              {timeRemaining}
+            </p>
+          </div>
+        )}
+
         {/* Enhanced Progress Bar */}
-        <div className="mt-6 w-full">
-          <div className={`h-2 rounded-full overflow-hidden ${
+        <div className="w-full mb-4">
+          <div className={`h-3 rounded-full overflow-hidden shadow-md transition-colors ${
             darkMode ? 'bg-slate-700' : 'bg-slate-200'
           }`}>
             <div
-              className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 animate-pulse"
+              className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 transition-all duration-300 ease-out shadow-lg shadow-indigo-500/50"
               style={{
-                width: '66%',
+                width: `${progressPercent}%`,
               }}
             />
           </div>
+          {/* Progress details */}
+          <div className="mt-2 flex items-center justify-between">
+            <p className={`text-xs font-semibold ${
+              darkMode ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              {progressPercent}% Complete
+            </p>
+            <p className={`text-xs ${
+              darkMode ? 'text-slate-500' : 'text-slate-500'
+            }`}>
+              Building searchable index...
+            </p>
+          </div>
         </div>
 
-        <p className={`mt-4 text-sm ${
-          darkMode ? 'text-slate-500' : 'text-slate-500'
-        }`}>
-          Building your searchable index...
-        </p>
+        {/* Stage Progress Dots */}
+        <div className="flex gap-2 justify-center items-center mt-8">
+          {stages.map((stageItem, s) => (
+            <div
+              key={s}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                progressPercent >= stageItem.percent
+                  ? 'w-6 bg-gradient-to-r from-indigo-500 to-purple-500'
+                  : `w-2 ${
+                      darkMode ? 'bg-slate-600' : 'bg-slate-300'
+                    }`
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )

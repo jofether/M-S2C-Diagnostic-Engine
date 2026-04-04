@@ -294,12 +294,13 @@ class MS2CRetriever:
         # Text similarity
         text_sim = torch.matmul(query_emb, self.global_embeddings.T).squeeze(0)
         
-        # Initialize alpha values
+        # Initialize alpha values (will be overridden if visual input available)
         alpha_text = 1.0
         alpha_visual = 0.0
         
-        # Handle image if provided - use neural gating network
+        # OPTIMIZATION: Handle image if provided - only encode ViT when visual input exists
         if image_path:
+            logger.info(f"🎬 MULTIMODAL MODE: Vision Transformer will be used for visual scoring")
             try:
                 image = Image.open(image_path).convert("RGB")
                 img_emb = self.encode_image(image)
@@ -333,10 +334,12 @@ class MS2CRetriever:
                 alpha_text = 1.0
                 alpha_visual = 0.0
         else:
-            # No image: use text-only (alpha_text=1.0)
+            # TEXT-ONLY OPTIMIZATION: No image provided - completely bypass ViT
+            # This saves GPU memory and inference latency by skipping Vision Transformer
             final_scores = text_sim
             alpha_text = 1.0
             alpha_visual = 0.0
+            logger.info(f"📝 TEXT-ONLY MODE: Vision Transformer bypassed (alpha_text=1.0, alpha_visual=0.0)")
         
         # Filter to valid indices
         filtered_scores = final_scores[valid_indices].clone()
