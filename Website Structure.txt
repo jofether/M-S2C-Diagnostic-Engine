@@ -16,7 +16,7 @@ II. THE LOADING STATE: CODEBASE INDEXING
 Purpose: Keep the user informed during the computationally heavy preprocessing phase.
 * Progress Indicator: A dynamic loading spinner or progress bar.
 * Status Messages: Text updates indicating the backend operations (e.g., 
-  "Parsing ASTs with Tree-sitter...", "Generating CodeBERT Embeddings...", 
+  "Parsing ASTs with Regex State Machine...", "Generating CodeBERT Embeddings...", 
   "Populating FAISS Vector Database...").
 
 III. THE QUERY STATE: MULTIMODAL BUG REPORT FORM

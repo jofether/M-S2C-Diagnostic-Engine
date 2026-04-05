@@ -50,6 +50,23 @@ class MS2CRetriever:
         "had", "a", "an", "in", "on", "at", "to", "by", "is", "be", "as", "or"
     }
     
+    # Semantic mapping: UX/generic terms → HTML technical tags (Phase 1 enhancement)
+    SEMANTIC_MAPPING = {
+        "link": ["<a", "href"],
+        "button": ["<button", "<input"],
+        "form": ["<form", "<input", "<textarea"],
+        "input": ["<input", "<textarea"],
+        "dropdown": ["<select", "<option"],
+        "menu": ["<nav", "<ul", "<li"],
+        "header": ["<header", "<h1", "<h2"],
+        "footer": ["<footer"],
+        "image": ["<img"],
+        "card": ["<div", "card"],
+        "text": ["<p", "<span", "<div"],
+        "click": ["<button", "onclick"],
+        "submit": ["<button", "type=", "submit"],
+    }
+    
     def __init__(self, model_name: str = "microsoft/codebert-base"):
         """Initialize the retriever with CodeBERT and ViT models."""
         
@@ -87,9 +104,11 @@ class MS2CRetriever:
         self.index_dict = {}
         self.embedded_nodes = []
         self.unique_files = set()
+        self.file_list = []  # ORDERED list of files (for consistent indexing)
         self.global_corpus = []
         self.global_embeddings = None
-        self.file_embeddings = None
+        self.file_embeddings = None  # Phase 2: File-level embeddings for document filtration
+        self.file_to_node_indices = {}  # Mapping: file_path → list of node indices
         logger.info("✅ MS2CRetriever initialized")
     
     def encode_text(self, text: str) -> torch.Tensor:
@@ -158,6 +177,7 @@ class MS2CRetriever:
         Stage 1: NLP Token Generation
         - Remove stopwords
         - Apply stemming (plurals, -ies, -es, -s)
+        - Apply semantic mapping (generic terms → technical tags)
         - Return normalized word set
         """
         query_lower = text.lower()
@@ -178,12 +198,17 @@ class MS2CRetriever:
                     query_words_set.update([word[:-1], word[:-2]])
                 elif len(word) > 3 and word.endswith('s') and not word.endswith('ss'):
                     query_words_set.add(word[:-1])
+                
+                # Phase 1 Enhancement: Semantic mapping (UX terms → technical tags)
+                if word in self.SEMANTIC_MAPPING:
+                    query_words_set.update(self.SEMANTIC_MAPPING[word])
         
         return query_words_set
     
     def _flatten_and_encode(self, index_dict: dict, batch_size: int = 64) -> None:
         """
         Build index and encode all nodes into embeddings using batch processing.
+        Also computes file-level embeddings for Phase 2 document filtration.
         
         Args:
             index_dict: Dictionary mapping file paths to list of node dicts with 'code_snippet' field
@@ -194,13 +219,21 @@ class MS2CRetriever:
         self.index_dict = index_dict
         self.embedded_nodes = []
         self.unique_files = set(index_dict.keys())
+        self.file_list = []  # CLEAR old file list for new repo
         self.global_corpus = []
+        self.file_to_node_indices = {}  # Phase 2: Map files to node indices
         
         # First pass: collect all code snippets and metadata
         all_code_snippets = []
         code_to_metadata = []
+        file_aggregates = {}  # Aggregate snippets per file
+        node_idx = 0
         
         for file_path, nodes in index_dict.items():
+            self.file_list.append(file_path)  # MAINTAIN ORDERED FILE LIST
+            file_aggregates[file_path] = []
+            self.file_to_node_indices[file_path] = []
+            
             for node_dict in nodes:
                 code_text = node_dict.get("code_snippet", "")
                 line_number = node_dict.get("line_number", "?")
@@ -209,6 +242,13 @@ class MS2CRetriever:
                 all_code_snippets.append(code_text)
                 code_to_metadata.append((file_with_line, code_text))
                 self.global_corpus.append((file_with_line, code_text))
+                
+                # Track node index for this file (Phase 2)
+                self.file_to_node_indices[file_path].append(node_idx)
+                node_idx += 1
+                
+                # Aggregate for file-level embedding
+                file_aggregates[file_path].append(code_text)
         
         logger.info(f"   Encoding {len(all_code_snippets)} snippets with batch_size={batch_size}...")
         
@@ -252,11 +292,33 @@ class MS2CRetriever:
             logger.info(f"✅ Index Built: {len(self.embedded_nodes)} snippets, shape: {self.global_embeddings.shape}")
         else:
             logger.warning("⚠️  No embeddings created!")
+        
+        # Phase 2 Enhancement: Compute file-level embeddings by aggregating node embeddings
+        logger.info(f"📊 Computing file-level embeddings for document filtration...")
+        file_embeddings_list = []
+        
+        for file_path in self.file_list:  # Use ordered file_list instead of unordered set
+            node_indices = self.file_to_node_indices[file_path]
+            if node_indices and self.global_embeddings is not None:
+                # Average pooling of node embeddings to create file-level representation
+                file_node_embeddings = self.global_embeddings[node_indices]
+                file_embedding = file_node_embeddings.mean(dim=0, keepdim=True)
+                file_embedding = F.normalize(file_embedding, p=2, dim=1)
+                file_embeddings_list.append(file_embedding)
+        
+        if file_embeddings_list:
+            self.file_embeddings = torch.cat(file_embeddings_list, dim=0)
+            logger.info(f"✅ File-level embeddings computed: {self.file_embeddings.shape}")
     
     def retrieve_top_k(self, text_query: str, k: int = 10, 
                        target_file: str = None, image_path: str = None) -> tuple:
         """
-        Execute 4-stage pipeline and return top-K results with alpha quality metrics.
+        Execute 4-stage cascading retrieval pipeline.
+        
+        Phase 1: NLP Token Generation → normalized tokens
+        Phase 2: Document Filtration → Top 5 candidate files via semantic similarity
+        Phase 3: Multimodal Scoring (CodeBERT + ViT with gating) → node-level scores within Top 5
+        Phase 4: Heuristic Reranking → 4-tier boosting
         
         Returns:
             tuple: (results_list, alpha_text, alpha_visual)
@@ -268,102 +330,169 @@ class MS2CRetriever:
             logger.warning("Index is empty")
             return [], 0.5, 0.5
         
-        # Stage 1: NLP Token Generation
-        logger.info(f"🔍 Stage 1: Token normalization...")
+        # ============= PHASE 1: NLP TOKEN GENERATION =============
+        logger.info(f"🔍 PHASE 1: NLP Token normalization...")
         query_words_set = self._normalize_tokens(text_query)
         logger.info(f"   Normalized tokens: {query_words_set if query_words_set else 'none'}")
         
-        # Embed query (for retrieval and quality assessment)
+        # Embed query (for phases 2 & 3)
         query_emb = self.encode_text(text_query)
         
-        # Stage 2: Document Filtration (file-level matching)
-        logger.info(f"🔍 Stage 2: Document filtration...")
-        valid_indices = list(range(len(self.global_corpus)))
+        # ============= PHASE 2: DOCUMENT FILTRATION =============
+        logger.info(f"🔍 PHASE 2: Document filtration (rough pass)...")
         
-        if target_file:
-            logger.info(f"   Filtering for target file: {target_file}")
-            valid_indices = [i for i, (f, _) in enumerate(self.global_corpus) if target_file in f]
+        # Rough Pass: File-level semantic similarity (if file embeddings available)
+        candidate_files = list(self.file_list)  # Use ordered file list
+        
+        if self.file_embeddings is not None and len(self.file_embeddings) > 0:
+            # Compute file-level similarities
+            file_similarities = torch.matmul(query_emb, self.file_embeddings.T).squeeze(0)
+            
+            # TIER 0 PRIORITY: If target_file is provided, GUARANTEE it's in Top 5
+            if target_file:
+                # Find the target file in our file list
+                target_file_candidates = [f for f in self.file_list if target_file in f]
+                logger.info(f"   🔴 TIER 0: Target file priority check - looking for '{target_file}'")
+                
+                if target_file_candidates:
+                    # Get remaining files based on semantic similarity (exclude target file)
+                    target_idx_in_similarities = None
+                    for i, f in enumerate(self.file_list):
+                        if f in target_file_candidates:
+                            target_idx_in_similarities = i
+                            break
+                    
+                    # Get top 4 other files (to make 5 total including target)
+                    other_indices = []
+                    for idx in torch.topk(file_similarities, min(5, len(self.file_list))).indices.tolist():
+                        if idx != target_idx_in_similarities:
+                            other_indices.append(idx)
+                        if len(other_indices) >= 4:
+                            break
+                    
+                    # Build final candidate list: target file FIRST, then 4 others
+                    candidate_files = target_file_candidates + [self.file_list[idx] for idx in other_indices]
+                    candidate_files = candidate_files[:5]  # Ensure max 5 files
+                    
+                    logger.info(f"   ✅ TIER 0 APPLIED: Target file guaranteed in Top 5")
+                    logger.info(f"   File-level filtering: {len(self.file_list)} → {len(candidate_files)} files")
+                    for i, fname in enumerate(candidate_files):
+                        logger.info(f"     {i+1}. {fname}")
+                else:
+                    logger.warning(f"   ⚠️  Target file '{target_file}' not found in index")
+                    # Fall back to semantic ranking
+                    top_file_count = min(5, len(candidate_files))
+                    top_file_indices = torch.topk(file_similarities, top_file_count).indices.tolist()
+                    candidate_files = [self.file_list[idx] for idx in top_file_indices]
+            else:
+                # No target file: use pure semantic similarity
+                top_file_count = min(5, len(candidate_files))
+                top_file_indices = torch.topk(file_similarities, top_file_count).indices.tolist()
+                candidate_files = [self.file_list[idx] for idx in top_file_indices]
+                
+                logger.info(f"   File-level filtering: {len(self.file_list)} → {len(candidate_files)} files")
+                for i, fname in enumerate(candidate_files):
+                    logger.info(f"     {i+1}. {fname}")
+        else:
+            logger.warning("   File embeddings not available, including all files")
+        
+        # Build valid node indices from candidate files only
+        valid_indices = []
+        for file_path in candidate_files:
+            if file_path in self.file_to_node_indices:
+                valid_indices.extend(self.file_to_node_indices[file_path])
         
         if not valid_indices:
-            logger.warning("   No matching documents after filtration")
+            logger.warning("   No nodes found in candidate files")
             return [], 0.5, 0.5
         
-        # Stage 3: Multimodal Fused Scoring with Neural Gating
-        logger.info(f"🔍 Stage 3: Multimodal scoring with neural gating...")
+        logger.info(f"   Phase 2 Result: {len(valid_indices)} nodes from top-5 files")
         
-        # Text similarity
-        text_sim = torch.matmul(query_emb, self.global_embeddings.T).squeeze(0)
+        # ============= PHASE 3: MULTIMODAL FUSION & GATING =============
+        logger.info(f"🔍 PHASE 3: Multimodal scoring with neural gating...")
         
-        # Initialize alpha values (will be overridden if visual input available)
+        # Compute text similarity ONLY for valid_indices (Top 5 files)
+        valid_embeddings = self.global_embeddings[valid_indices]
+        text_sim_all = torch.matmul(query_emb, self.global_embeddings.T).squeeze(0)
+        text_sim_filtered = text_sim_all[valid_indices]
+        
+        # Initialize alpha values
         alpha_text = 1.0
         alpha_visual = 0.0
         
-        # OPTIMIZATION: Handle image if provided - only encode ViT when visual input exists
+        # Handle multimodal case (image provided)
         if image_path:
             logger.info(f"🎬 MULTIMODAL MODE: Vision Transformer will be used for visual scoring")
             try:
                 image = Image.open(image_path).convert("RGB")
                 img_emb = self.encode_image(image)
-                vis_sim = torch.matmul(img_emb, self.global_embeddings.T).squeeze(0)
                 
-                # 🔴 NEURAL GATING: Compute dynamic alpha based on embedding quality
+                # Compute visual similarity ONLY for valid_indices (Top 5 files)
+                vis_sim_all = torch.matmul(img_emb, self.global_embeddings.T).squeeze(0)
+                vis_sim_filtered = vis_sim_all[valid_indices]
+                
+                # 🔴 NEURAL GATING: Compute base alpha
                 base_alpha = self.compute_gating_weight(query_emb, img_emb).item()
                 logger.info(f"   Neural Gating Weight (base): {base_alpha:.4f}")
                 
-                # Dynamic gating with adaptive thresholding
-                # If text similarity is very high (>0.80), trust text more (alpha=0.95)
-                # Otherwise clamp to safe range [0.70, 0.95]
-                if text_sim.max().item() > 0.80:
+                # ⚠️  CRITICAL SAFETY CLAMPING (Thesis Rule 2: High-Confidence Lock)
+                # If top text confidence is very high (>0.80), lock alpha to 0.95 (trust text)
+                top_text_confidence = text_sim_filtered.max().item()
+                logger.info(f"   Top text confidence in Top-5 files: {top_text_confidence:.4f}")
+                
+                if top_text_confidence > 0.80:
+                    # Rule 2: High-Confidence Lock
                     alpha_text = 0.95
+                    logger.info(f"   🔴 RULE 2 TRIGGERED: Text confidence > 0.80, locking alpha_text = 0.95")
                 else:
-                    alpha_text = torch.clamp(
+                    # Rule 1: Minimum floor enforcement
+                    base_clamped = torch.clamp(
                         torch.tensor(base_alpha + 0.20),
                         min=0.70,
                         max=0.95
                     ).item()
+                    alpha_text = base_clamped
+                    logger.info(f"   🔴 RULE 1 APPLIED: Clamping alpha to [0.70, 0.95] range")
                 
                 alpha_visual = 1.0 - alpha_text
                 
-                logger.info(f"   Dynamic Gating Weights: α_text={alpha_text:.4f}, α_visual={alpha_visual:.4f}")
+                logger.info(f"   ✅ Final Gating Weights: α_text={alpha_text:.4f}, α_visual={alpha_visual:.4f}")
                 
-                # Fuse scores using computed alphas
-                final_scores = (alpha_text * text_sim) + (alpha_visual * vis_sim)
+                # Fuse scores using final alpha (ONLY within Top-5 files)
+                final_scores = (alpha_text * text_sim_filtered) + (alpha_visual * vis_sim_filtered)
+                
             except Exception as e:
                 logger.warning(f"Image scoring failed: {e}, using text only")
-                final_scores = text_sim
+                final_scores = text_sim_filtered
                 alpha_text = 1.0
                 alpha_visual = 0.0
         else:
-            # TEXT-ONLY OPTIMIZATION: No image provided - completely bypass ViT
-            # This saves GPU memory and inference latency by skipping Vision Transformer
-            final_scores = text_sim
+            # TEXT-ONLY MODE: Use text similarity only
+            final_scores = text_sim_filtered
             alpha_text = 1.0
             alpha_visual = 0.0
-            logger.info(f"📝 TEXT-ONLY MODE: Vision Transformer bypassed (alpha_text=1.0, alpha_visual=0.0)")
+            logger.info(f"📝 TEXT-ONLY MODE: No image provided (alpha_text=1.0, alpha_visual=0.0)")
         
-        # Filter to valid indices
-        filtered_scores = final_scores[valid_indices].clone()
-        
-        # Stage 4: Heuristic Matrix Boosting
-        logger.info(f"🔍 Stage 4: Heuristic boosting...")
-        boost_tensor = torch.zeros_like(filtered_scores)
+        # ============= PHASE 4: HEURISTIC MATRIX BOOSTING =============
+        logger.info(f"🔍 PHASE 4: Heuristic boosting (4-tier system)...")
+        boost_tensor = torch.zeros_like(final_scores)
         
         invalid_markers = ["<svg", "<path", "<g ", "<circle", "<rect", "<line", "<polygon"]
         
-        for i, idx in enumerate(valid_indices):
-            file_path, code_snippet = self.global_corpus[idx]
+        for i, global_idx in enumerate(valid_indices):
+            file_path, code_snippet = self.global_corpus[global_idx]
             code_lower = code_snippet.lower()
             
-            # Skip SVG/graphics
+            # Skip SVG/graphics (penalty)
             if any(m in code_lower for m in invalid_markers):
-                boost_tensor[i] -= 10.0  # Strong penalty
+                boost_tensor[i] -= 10.0
                 continue
             
-            # Tier 0: File override
+            # Tier 0: Exact filename match (+10.0)
             if target_file and target_file in file_path:
                 boost_tensor[i] += 10.0
             
-            # Tier 1: Tag matching
+            # Tier 1: HTML tag matching (+1.0)
             tag_match = re.search(r'<\s*([a-z0-9\-]+)', code_lower)
             if tag_match:
                 tag = tag_match.group(1)
@@ -372,7 +501,7 @@ class MS2CRetriever:
                         boost_tensor[i] += 1.0
                         break
             
-            # Tier 2: CSS class matching
+            # Tier 2: CSS class matching (+0.5)
             class_match = re.search(r'classname=["\']([^"\']+)["\']', code_lower)
             if class_match:
                 class_str = class_match.group(1)
@@ -385,44 +514,45 @@ class MS2CRetriever:
                             boost_tensor[i] += 0.25
                             break
             
-            # Tier 3: Attribute matching
+            # Tier 3: Attribute metadata matching (+0.25)
             for word in query_words_set:
                 if len(word) >= 3 and word in code_lower:
                     boost_tensor[i] += 0.25
                     break
         
         # Apply boosting
-        final_scores_boosted = filtered_scores + boost_tensor
+        final_scores_boosted = final_scores + boost_tensor
         
-        # Get top-K
+        # Get top-K from boosted scores
         actual_k = min(k, len(valid_indices))
         try:
             top_k_values, top_k_indices = torch.topk(final_scores_boosted, actual_k)
             
             logger.info(f"🔍 TOP-K SCORES DEBUG:")
             for rank, (idx_in_filtered, score) in enumerate(zip(top_k_indices.tolist(), top_k_values.tolist())):
-                actual_idx = valid_indices[idx_in_filtered]
-                file_path, code = self.global_corpus[actual_idx]
+                global_idx = valid_indices[idx_in_filtered]
+                file_path, code = self.global_corpus[global_idx]
                 logger.info(f"  Rank {rank+1}: score={score:.4f} | {file_path[:60]}")
             
             results = []
             for idx_in_filtered, score in zip(top_k_indices.tolist(), top_k_values.tolist()):
-                actual_idx = valid_indices[idx_in_filtered]
-                file_path, code = self.global_corpus[actual_idx]
+                global_idx = valid_indices[idx_in_filtered]
+                file_path, code = self.global_corpus[global_idx]
                 results.append((file_path, code))
             
             logger.info(f"✅ Retrieved {len(results)} results")
-            return results
+            return results, alpha_text, alpha_visual
         except Exception as e:
             logger.error(f"Failed to get top-K: {e}")
-            return []
+            return [], alpha_text, alpha_visual
     
     def search(self, query: str, top_k: int = 10, gating_weight: float = 0.5) -> list:
         """
         Legacy compatibility wrapper - calls retrieve_top_k internally.
+        Returns list of results with legacy format for backward compatibility.
         """
         logger.info(f"🔄 Legacy search() called")
-        results = self.retrieve_top_k(text_query=query, k=top_k)
+        results, alpha_text, alpha_visual = self.retrieve_top_k(text_query=query, k=top_k)
         
         # Convert to legacy format with metadata
         formatted = []
@@ -431,7 +561,9 @@ class MS2CRetriever:
                 "filepath": filepath,
                 "code": code,
                 "score": 1.0 - (idx * 0.05),  # Decrease for lower ranks
-                "semantic_score": 1.0 - (idx * 0.05)
+                "semantic_score": 1.0 - (idx * 0.05),
+                "alpha_text": alpha_text,
+                "alpha_visual": alpha_visual
             })
         
         return formatted

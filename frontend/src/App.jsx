@@ -11,7 +11,7 @@ function App() {
   const [targetFileHint, setTargetFileHint] = useState('')
   const [uploadedFile, setUploadedFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
-  const [loadingMessage, setLoadingMessage] = useState('Parsing ASTs with Tree-sitter...')
+  const [loadingMessage, setLoadingMessage] = useState('Parsing ASTs with Regex State Machine...')
   const [dragActive, setDragActive] = useState(false)
   const [darkMode, setDarkMode] = useState(true)
   const [indexedFiles, setIndexedFiles] = useState([]) // Files from indexed repo
@@ -799,7 +799,7 @@ function LoadingState({ message, darkMode, progressPercent = 0, estimatedTimeRem
   // Define all indexing stages
   const stages = [
     { percent: 10, message: 'Cloning repository...' },
-    { percent: 30, message: 'Parsing ASTs with Tree-sitter...' },
+    { percent: 30, message: 'Parsing ASTs with Regex State Machine...' },
     { percent: 60, message: 'Generating CodeBERT Embeddings...' },
     { percent: 90, message: 'Populating FAISS Vector Database...' },
     { percent: 100, message: 'Indexing Complete!' }

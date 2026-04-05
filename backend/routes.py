@@ -168,7 +168,7 @@ def setup_routes(app, retriever, pytorch_available):
         """
         Performs the complete offline indexing workflow:
         1. Shallow clone the GitHub repository
-        2. Extract React components and CSS rules using regex (mock Tree-sitter)
+        2. Extract React components using custom regex state-machine AST parser
         3. Build index dictionary mapping files to code snippets
         4. Re-encode through CodeBERT via MS2CRetriever
         5. Cache index to disk
@@ -216,7 +216,7 @@ def setup_routes(app, retriever, pytorch_available):
                 }
             
             # Step 2 & 3: Build index from cloned repo
-            index_progress_state["current_message"] = "Parsing ASTs with Tree-sitter..."
+            index_progress_state["current_message"] = "Parsing ASTs with Regex State Machine..."
             index_progress_state["progress_percent"] = 30
             print("\n🔍 Extracting components and building index...")
             index_dict = build_index_sync(temp_dir)
@@ -333,10 +333,15 @@ def setup_routes(app, retriever, pytorch_available):
         except Exception as e:
             print(f"❌ Indexing failed: {e}")
             import traceback
+            tb_str = traceback.format_exc()
             traceback.print_exc()
+            print(f"\nFull Traceback:\n{tb_str}")
+            logger.error(f"❌ Indexing failed: {e}")
+            logger.error(f"Traceback: {tb_str}")
             error_response = {
                 "status": "error",
                 "message": f"Indexing error: {str(e)}",
+                "error_details": tb_str,
                 "files_indexed": 0,
                 "snippets_indexed": 0
             }
@@ -498,7 +503,8 @@ def setup_routes(app, retriever, pytorch_available):
                         logger.info(f"   Target file: {target_file}")
                     
                     # Call 4-stage pipeline (retrieve_top_k handles all stages internally)
-                    semantic_results = retriever.retrieve_top_k(
+                    # Returns: (results_list, alpha_text, alpha_visual)
+                    semantic_results, alpha_text, alpha_visual = retriever.retrieve_top_k(
                         text_query=cleaned_query,
                         target_file=target_file,  # Will be used in Stage 2 (Document Filtration) and Stage 4 (Boosting)
                         image_path=temp_image_path,  # Path to temp image (Stage 3 uses this for ViT)

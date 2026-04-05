@@ -19,7 +19,15 @@ except ImportError:
 Repository AST Indexer - Thesis-Aligned (Based on indexer_basis.py)
 =========================================================================================
 Scans repositories and extracts opening JSX/HTML tags with intelligent parsing.
-Uses custom state-machine parser to handle JSX complexities.
+
+⚠️  NOTE: This implementation uses a CUSTOM STATE-MACHINE REGEX PARSER, NOT Tree-sitter.
+The progress message "Parsing ASTs with Regex State Machine..." accurately reflects this.
+
+CUSTOM PARSER FEATURES:
+- Brace-aware look-ahead for JSX complexity
+- Depth tracking with silent closing tag handling
+- Line number injection: (L:x-y) or (L:x)
+- Self-closing tag fixes and trailing JS debris cleanup
 
 THESIS IMPROVEMENTS:
 - Maintains chronological order (no deduplication)
@@ -252,6 +260,8 @@ async def reindex_retriever(retriever, index_dict: dict):
         except Exception as e:
             is_index_ready = False
             logger.error(f"❌ Fatal error re-indexing retriever: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             raise e
 
 # Example usage in FastAPI main.py or routes.py during startup:
