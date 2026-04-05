@@ -57,6 +57,26 @@ MAX_FILE_PREVIEW_LENGTH = 500
 
 
 # ============================================================
+# RETRIEVER QUALITY PARAMETERS (Phase 3 & 4)
+# ============================================================
+
+# Phase 3: Multimodal Gating - Alpha Clamping
+ALPHA_CONFIDENCE_THRESHOLD = 0.80      # Text confidence threshold for high-confidence lock
+ALPHA_HIGH_CONFIDENCE_LOCK = 0.95      # Locked alpha_text when confidence > threshold
+ALPHA_MIN_FLOOR = 0.70                 # Minimum alpha clamp value
+ALPHA_MAX_CEILING = 0.95               # Maximum alpha clamp value
+ALPHA_BASE_BONUS = 0.20                # Bonus added to base_alpha before clamping
+
+# Phase 4: Heuristic Boosting - 4-tier system
+BOOST_TIER_0_FILENAME = 10.0           # Tier 0: Exact filename match
+BOOST_TIER_1_TAG = 1.0                 # Tier 1: HTML tag match
+BOOST_TIER_2_CLASS_FULL = 0.5          # Tier 2: CSS class full word match
+BOOST_TIER_2_PARTIAL = 0.25            # Tier 2/3: Partial/attribute matches
+BOOST_SVG_PENALTY = -10.0              # Penalty for SVG/graphics content
+WORD_MIN_LENGTH = 3                    # Minimum character length for word matching
+
+
+# ============================================================
 # APPLICATION STATE
 # ============================================================
 

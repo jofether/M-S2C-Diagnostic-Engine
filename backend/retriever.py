@@ -18,6 +18,13 @@ from transformers import AutoTokenizer, AutoModel, ViTModel, ViTImageProcessor
 from PIL import Image
 import logging
 import re
+from config import (
+    ALPHA_CONFIDENCE_THRESHOLD, ALPHA_HIGH_CONFIDENCE_LOCK,
+    ALPHA_MIN_FLOOR, ALPHA_MAX_CEILING, ALPHA_BASE_BONUS,
+    BOOST_TIER_0_FILENAME, BOOST_TIER_1_TAG,
+    BOOST_TIER_2_CLASS_FULL, BOOST_TIER_2_PARTIAL,
+    BOOST_SVG_PENALTY, WORD_MIN_LENGTH
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,20 +58,22 @@ class MS2CRetriever:
     }
     
     # Semantic mapping: UX/generic terms → HTML technical tags (Phase 1 enhancement)
+    # ⚠️  CRITICAL: Tag names must NOT have angle brackets (regex extracts tags without them)
+    # Phase 4 Tier 1 regex extracts: tag = tag_match.group(1)  # e.g., "a", "button", not "<a", "<button"
     SEMANTIC_MAPPING = {
-        "link": ["<a", "href"],
-        "button": ["<button", "<input"],
-        "form": ["<form", "<input", "<textarea"],
-        "input": ["<input", "<textarea"],
-        "dropdown": ["<select", "<option"],
-        "menu": ["<nav", "<ul", "<li"],
-        "header": ["<header", "<h1", "<h2"],
-        "footer": ["<footer"],
-        "image": ["<img"],
-        "card": ["<div", "card"],
-        "text": ["<p", "<span", "<div"],
-        "click": ["<button", "onclick"],
-        "submit": ["<button", "type=", "submit"],
+        "link": ["a", "href"],
+        "button": ["button", "input"],
+        "form": ["form", "input", "textarea"],
+        "input": ["input", "textarea"],
+        "dropdown": ["select", "option"],
+        "menu": ["nav", "ul", "li"],
+        "header": ["header", "h1", "h2"],
+        "footer": ["footer"],
+        "image": ["img"],
+        "card": ["div", "card"],
+        "text": ["p", "span", "div"],
+        "click": ["button", "onclick"],
+        "submit": ["button", "type", "submit"],
     }
     
     def __init__(self, model_name: str = "microsoft/codebert-base"):
@@ -237,8 +246,18 @@ class MS2CRetriever:
             for node_dict in nodes:
                 code_text = node_dict.get("code_snippet", "")
                 line_number = node_dict.get("line_number", "?")
-                # Store file_path with line number for display
-                file_with_line = f"{file_path} (L:{line_number})" if line_number != "?" else file_path
+                
+                # Extract full line range from code_snippet (e.g., "[7] (L:115-119)" → "L:115-119")
+                # This ensures the file_path has the complete range, not just the start line
+                line_range = "?"
+                if code_text:
+                    import re
+                    line_match = re.search(r'\(L:(\d+(?:-\d+)?)\)', code_text)
+                    if line_match:
+                        line_range = f"L:{line_match.group(1)}"
+                
+                # Store file_path with full line range for display
+                file_with_line = f"{file_path} ({line_range})" if line_range != "?" else file_path
                 all_code_snippets.append(code_text)
                 code_to_metadata.append((file_with_line, code_text))
                 self.global_corpus.append((file_with_line, code_text))
@@ -326,20 +345,47 @@ class MS2CRetriever:
                 - alpha_text: Quality weight for text (0.0-1.0)
                 - alpha_visual: Quality weight for visual (0.0-1.0)
         """
-        if self.global_embeddings is None or len(self.global_corpus) == 0:
-            logger.warning("Index is empty")
+        print(f"\n\n🚀🚀🚀 RETRIEVE_TOP_K ENTRY POINT 🚀🚀🚀", flush=True)
+        
+        try:
+            logger.info(f"🔍 RETRIEVE_TOP_K() CALLED")
+            logger.info(f"   global_embeddings is None: {self.global_embeddings is None}")
+            logger.info(f"   global_embeddings shape: {self.global_embeddings.shape if self.global_embeddings is not None else 'N/A'}")
+            logger.info(f"   global_corpus length: {len(self.global_corpus)}")
+            logger.info(f"   text_query: {text_query[:60]}...")
+            
+            print(f"🔍 RETRIEVE_TOP_K() CALLED - STDOUT")
+            print(f"   global_corpus: {len(self.global_corpus)}")
+            print(f"   global_embeddings: {self.global_embeddings is not None}")
+            
+            if self.global_embeddings is None or len(self.global_corpus) == 0:
+                logger.warning(f"🛑 Index is empty! Returning empty results")
+                logger.warning(f"   global_embeddings is None: {self.global_embeddings is None}")
+                logger.warning(f"   len(global_corpus): {len(self.global_corpus)}")
+                print(f"🛑 INDEX EMPTY - STDOUT")
+                return [], 0.5, 0.5
+            
+            # ============= PHASE 1: NLP TOKEN GENERATION =============
+            logger.info(f"🔍 PHASE 1: NLP Token normalization...")
+            query_words_set = self._normalize_tokens(text_query)
+            logger.info(f"   Normalized tokens: {query_words_set if query_words_set else 'none'}")
+            
+            # Embed query (for phases 2 & 3)
+            query_emb = self.encode_text(text_query)
+            logger.info(f"   Query embedding shape: {query_emb.shape}")
+            
+        except Exception as e:
+            logger.error(f"🛑 ERROR IN RETRIEVE_TOP_K PHASE 1: {e}")
+            import traceback
+            traceback.print_exc()
             return [], 0.5, 0.5
-        
-        # ============= PHASE 1: NLP TOKEN GENERATION =============
-        logger.info(f"🔍 PHASE 1: NLP Token normalization...")
-        query_words_set = self._normalize_tokens(text_query)
-        logger.info(f"   Normalized tokens: {query_words_set if query_words_set else 'none'}")
-        
-        # Embed query (for phases 2 & 3)
-        query_emb = self.encode_text(text_query)
         
         # ============= PHASE 2: DOCUMENT FILTRATION =============
         logger.info(f"🔍 PHASE 2: Document filtration (rough pass)...")
+        logger.info(f"   file_list size: {len(self.file_list)}")
+        logger.info(f"   file_embeddings available: {self.file_embeddings is not None}")
+        if self.file_embeddings is not None:
+            logger.info(f"   file_embeddings shape: {self.file_embeddings.shape}")
         
         # Rough Pass: File-level semantic similarity (if file embeddings available)
         candidate_files = list(self.file_list)  # Use ordered file list
@@ -397,13 +443,19 @@ class MS2CRetriever:
             logger.warning("   File embeddings not available, including all files")
         
         # Build valid node indices from candidate files only
+        logger.info(f"   Building valid_indices from {len(candidate_files)} candidate files...")
         valid_indices = []
         for file_path in candidate_files:
             if file_path in self.file_to_node_indices:
+                node_count = len(self.file_to_node_indices[file_path])
                 valid_indices.extend(self.file_to_node_indices[file_path])
+                logger.info(f"     ✓ {file_path}: {node_count} nodes")
+            else:
+                logger.warning(f"     ✗ {file_path}: NOT FOUND in file_to_node_indices!")
         
         if not valid_indices:
             logger.warning("   No nodes found in candidate files")
+            logger.warning(f"   Available keys in file_to_node_indices: {list(self.file_to_node_indices.keys())}")
             return [], 0.5, 0.5
         
         logger.info(f"   Phase 2 Result: {len(valid_indices)} nodes from top-5 files")
@@ -436,23 +488,23 @@ class MS2CRetriever:
                 logger.info(f"   Neural Gating Weight (base): {base_alpha:.4f}")
                 
                 # ⚠️  CRITICAL SAFETY CLAMPING (Thesis Rule 2: High-Confidence Lock)
-                # If top text confidence is very high (>0.80), lock alpha to 0.95 (trust text)
+                # If top text confidence is very high (>threshold), lock alpha to configured value (trust text)
                 top_text_confidence = text_sim_filtered.max().item()
                 logger.info(f"   Top text confidence in Top-5 files: {top_text_confidence:.4f}")
                 
-                if top_text_confidence > 0.80:
+                if top_text_confidence > ALPHA_CONFIDENCE_THRESHOLD:
                     # Rule 2: High-Confidence Lock
-                    alpha_text = 0.95
-                    logger.info(f"   🔴 RULE 2 TRIGGERED: Text confidence > 0.80, locking alpha_text = 0.95")
+                    alpha_text = ALPHA_HIGH_CONFIDENCE_LOCK
+                    logger.info(f"   🔴 RULE 2 TRIGGERED: Text confidence > {ALPHA_CONFIDENCE_THRESHOLD}, locking alpha_text = {ALPHA_HIGH_CONFIDENCE_LOCK}")
                 else:
                     # Rule 1: Minimum floor enforcement
                     base_clamped = torch.clamp(
-                        torch.tensor(base_alpha + 0.20),
-                        min=0.70,
-                        max=0.95
+                        torch.tensor(base_alpha + ALPHA_BASE_BONUS),
+                        min=ALPHA_MIN_FLOOR,
+                        max=ALPHA_MAX_CEILING
                     ).item()
                     alpha_text = base_clamped
-                    logger.info(f"   🔴 RULE 1 APPLIED: Clamping alpha to [0.70, 0.95] range")
+                    logger.info(f"   🔴 RULE 1 APPLIED: Clamping alpha to [{ALPHA_MIN_FLOOR}, {ALPHA_MAX_CEILING}] range")
                 
                 alpha_visual = 1.0 - alpha_text
                 
@@ -485,39 +537,39 @@ class MS2CRetriever:
             
             # Skip SVG/graphics (penalty)
             if any(m in code_lower for m in invalid_markers):
-                boost_tensor[i] -= 10.0
+                boost_tensor[i] += BOOST_SVG_PENALTY
                 continue
             
-            # Tier 0: Exact filename match (+10.0)
+            # Tier 0: Exact filename match (+config)
             if target_file and target_file in file_path:
-                boost_tensor[i] += 10.0
+                boost_tensor[i] += BOOST_TIER_0_FILENAME
             
-            # Tier 1: HTML tag matching (+1.0)
+            # Tier 1: HTML tag matching (+config)
             tag_match = re.search(r'<\s*([a-z0-9\-]+)', code_lower)
             if tag_match:
                 tag = tag_match.group(1)
                 for word in query_words_set:
                     if word == tag:
-                        boost_tensor[i] += 1.0
+                        boost_tensor[i] += BOOST_TIER_1_TAG
                         break
             
-            # Tier 2: CSS class matching (+0.5)
+            # Tier 2: CSS class matching (+config)
             class_match = re.search(r'classname=["\']([^"\']+)["\']', code_lower)
             if class_match:
                 class_str = class_match.group(1)
                 for word in query_words_set:
-                    if len(word) >= 3:
+                    if len(word) >= WORD_MIN_LENGTH:
                         if word in class_str.split():
-                            boost_tensor[i] += 0.5
+                            boost_tensor[i] += BOOST_TIER_2_CLASS_FULL
                             break
                         elif word in class_str:
-                            boost_tensor[i] += 0.25
+                            boost_tensor[i] += BOOST_TIER_2_PARTIAL
                             break
             
-            # Tier 3: Attribute metadata matching (+0.25)
+            # Tier 3: Attribute metadata matching (+config)
             for word in query_words_set:
-                if len(word) >= 3 and word in code_lower:
-                    boost_tensor[i] += 0.25
+                if len(word) >= WORD_MIN_LENGTH and word in code_lower:
+                    boost_tensor[i] += BOOST_TIER_2_PARTIAL
                     break
         
         # Apply boosting
@@ -538,7 +590,7 @@ class MS2CRetriever:
             for idx_in_filtered, score in zip(top_k_indices.tolist(), top_k_values.tolist()):
                 global_idx = valid_indices[idx_in_filtered]
                 file_path, code = self.global_corpus[global_idx]
-                results.append((file_path, code))
+                results.append((file_path, code, float(score)))  # Include real mathematical score
             
             logger.info(f"✅ Retrieved {len(results)} results")
             return results, alpha_text, alpha_visual
@@ -556,12 +608,12 @@ class MS2CRetriever:
         
         # Convert to legacy format with metadata
         formatted = []
-        for idx, (filepath, code) in enumerate(results):
+        for idx, (filepath, code, score) in enumerate(results):
             formatted.append({
                 "filepath": filepath,
                 "code": code,
-                "score": 1.0 - (idx * 0.05),  # Decrease for lower ranks
-                "semantic_score": 1.0 - (idx * 0.05),
+                "score": float(score),  # Real mathematical score from 4-stage pipeline
+                "semantic_score": float(score),  # Same as score from pipeline
                 "alpha_text": alpha_text,
                 "alpha_visual": alpha_visual
             })

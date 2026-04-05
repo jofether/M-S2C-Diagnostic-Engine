@@ -15,6 +15,7 @@ from config import logger, app_state
 from repository import clone_repository
 from indexer import build_index_sync, reindex_retriever, get_index_status
 from utils import compute_gating_weight, generate_smart_results
+from input_quality import InputQualityAnalyzer
 
 
 # Global data storage
@@ -54,6 +55,9 @@ def setup_routes(app, retriever, pytorch_available):
         pytorch_available: Boolean indicating if PyTorch is available
     """
     
+    # Initialize input quality analyzer (independent from retrieval pipeline)
+    input_analyzer = InputQualityAnalyzer()
+    
     @app.get("/api/index-status")
     async def index_status():
         """
@@ -66,6 +70,20 @@ def setup_routes(app, retriever, pytorch_available):
         return {
             "is_index_ready": get_index_status(),
             "status": "ready" if get_index_status() else "indexing"
+        }
+    
+    @app.get("/api/retriever-debug")
+    async def retriever_debug():
+        """DEBUG ENDPOINT: Returns retriever state info"""
+        return {
+            "global_corpus_count": len(retriever.global_corpus) if retriever else 0,
+            "embedded_nodes_count": len(retriever.embedded_nodes) if retriever else 0,
+            "file_list_count": len(retriever.file_list) if retriever else 0,
+            "file_to_node_indices_count": len(retriever.file_to_node_indices) if retriever else 0,
+            "file_embeddings_exists": retriever.file_embeddings is not None if retriever else False,
+            "file_embeddings_shape": str(retriever.file_embeddings.shape) if (retriever and retriever.file_embeddings is not None) else None,
+            "sample_files": list(retriever.file_list)[:5] if retriever else [],
+            "sample_file_to_node_keys": list(retriever.file_to_node_indices.keys())[:5] if retriever else []
         }
     
     @app.get("/api/index-progress")
@@ -373,8 +391,32 @@ def setup_routes(app, retriever, pytorch_available):
         # 1. Read the uploaded image as raw bytes (Fix #3 in ms2c.py handles PIL conversion)
         image_bytes = await screenshot.read() if screenshot else None
         temp_image_path = None
+        input_quality_analysis = None
         
         try:
+            # ======================== INPUT QUALITY ANALYSIS ========================
+            # Analyze user input INDEPENDENTLY from retrieval pipeline
+            screenshot_path_for_analysis = None
+            if image_bytes:
+                # Save temporarily for quality analysis
+                temp_analysis_image = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+                temp_analysis_image.write(image_bytes)
+                temp_analysis_image.close()
+                screenshot_path_for_analysis = temp_analysis_image.name
+            
+            input_quality_analysis = input_analyzer.analyze_combined_input(
+                description=bug_description,
+                screenshot_path=screenshot_path_for_analysis
+            )
+            input_analyzer.log_analysis(input_quality_analysis)
+            
+            # Clean up temporary analysis file if created
+            if screenshot_path_for_analysis and os.path.exists(screenshot_path_for_analysis):
+                try:
+                    os.unlink(screenshot_path_for_analysis)
+                except:
+                    pass
+            
             print(f"\n{'='*60}")
             print(f"🔍 DIAGNOSING BUG")
             print(f"{'='*60}")
@@ -498,9 +540,18 @@ def setup_routes(app, retriever, pytorch_available):
                     print(f"🔍 Performing 4-stage retrieval on {len(retriever.global_corpus)} snippets...")
                     logger.info(f"🔍 Performing 4-stage retrieval on {len(retriever.global_corpus)} snippets...")
                     logger.info(f"   Embedded nodes count: {len(retriever.embedded_nodes)}")
+                    logger.info(f"   File list count: {len(retriever.file_list)}")
+                    logger.info(f"   file_to_node_indices keys: {len(retriever.file_to_node_indices)}")
                     logger.info(f"   Query: {cleaned_query[:80]}...")
                     if target_file:
                         logger.info(f"   Target file: {target_file}")
+                        logger.info(f"   Looking for target file in: {list(retriever.file_to_node_indices.keys())[:5]}...")
+                    
+                    # DEBUG: Check if file embeddings exist
+                    if retriever.file_embeddings is not None:
+                        logger.info(f"   File embeddings shape: {retriever.file_embeddings.shape}")
+                    else:
+                        logger.warning(f"   File embeddings is NONE - Phase 2 will skip semantic filtering!")
                     
                     # Call 4-stage pipeline (retrieve_top_k handles all stages internally)
                     # Returns: (results_list, alpha_text, alpha_visual)
@@ -518,7 +569,12 @@ def setup_routes(app, retriever, pytorch_available):
                         logger.warning(f"⚠️  EMPTY RESULTS - Retriever index may be empty or query not matching")
                         logger.warning(f"   embedded_nodes: {len(retriever.embedded_nodes)}")
                         logger.warning(f"   global_corpus: {len(retriever.global_corpus)}")
+                        logger.warning(f"   file_list: {len(retriever.file_list)}")
+                        logger.warning(f"   file_to_node_indices: {len(retriever.file_to_node_indices)}")
                         logger.warning(f"   query: {cleaned_query[:100]}")
+                        if target_file:
+                            matching_files = [f for f in retriever.file_list if target_file in f]
+                            logger.warning(f"   matching target files: {matching_files}")
                     
                     # Results are already ranked by all 4 stages
                     top_results = semantic_results
@@ -534,7 +590,7 @@ def setup_routes(app, retriever, pytorch_available):
                         print(f"⚠️  No results from 4-stage pipeline")
                         logger.warning(f"⚠️  No results from 4-stage pipeline")
                     else:
-                        for idx, (file_path, snippet) in enumerate(top_results):
+                        for idx, (file_path, snippet, actual_score) in enumerate(top_results):
                             if len(results) >= 10:  # Stop once we have 10
                                 break
                             try:
@@ -562,7 +618,7 @@ def setup_routes(app, retriever, pytorch_available):
                                     "lines": lines,
                                     "code": snippet.strip(),
                                     "explanation": f"Found in {file_name} - relevant code snippet",
-                                    "confidence": 0.95 - (idx * 0.05)  # Decrease confidence for lower-ranked results
+                                    "confidence": round(float(actual_score), 4)  # Real mathematical score from 4-stage pipeline
                                 }
                                 results.append(formatted_result)
                                 logger.info(f"   Result {idx+1}: {file_path}")
@@ -597,7 +653,8 @@ def setup_routes(app, retriever, pytorch_available):
                 "indexed": app_state.is_indexed,
                 "using_real_data": is_real_index,
                 "indexed_files": app_state.file_count,
-                "indexed_snippets": app_state.snippet_count
+                "indexed_snippets": app_state.snippet_count,
+                "input_quality": input_quality_analysis  # Separate from retrieval pipeline
             }
             
             print(f"✅ Diagnosis complete - {len(results)} candidates returned")

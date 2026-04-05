@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 function App() {
   const [currentState, setCurrentState] = useState('QUERY')
@@ -442,7 +444,15 @@ function App() {
         formData.append('screenshot', uploadedFile)
       }
 
+      console.log('� FormData contents:')
+      console.log('   bug_description:', finalDescription.substring(0, 80) + '...')
+      console.log('   has screenshot:', !!uploadedFile)
+      if (uploadedFile) {
+        console.log('   screenshot name:', uploadedFile.name)
+        console.log('   screenshot size:', uploadedFile.size, 'bytes')
+      }
       console.log('🔍 Attempting diagnosis fetch from:', 'http://localhost:8000/api/diagnose')
+      console.log('   Time:', new Date().toLocaleTimeString())
 
       const response = await fetch('http://localhost:8000/api/diagnose', {
         method: 'POST',
@@ -458,7 +468,12 @@ function App() {
       }
 
       const data = await response.json()
-      console.log('Diagnosis response:', data)
+      console.log('📥 Diagnosis response received:', data)
+      console.log('   Response type:', typeof data)
+      console.log('   Response keys:', Object.keys(data))
+      console.log('   candidates array:', data.candidates)
+      console.log('   candidates type:', typeof data.candidates)
+      console.log('   candidates length:', data.candidates ? data.candidates.length : 'null/undefined')
 
       // Add result to conversation
       const resultMessage = {
@@ -469,7 +484,14 @@ function App() {
           text: Math.round((data.alpha_text !== undefined ? data.alpha_text : 0.5) * 100),
           visual: Math.round((data.alpha_visual !== undefined ? data.alpha_visual : 0.5) * 100),
         },
+        inputQuality: data.input_quality || {},
       }
+      console.log('📋 resultMessage being set:', {
+        id: resultMessage.id,
+        candidatesCount: resultMessage.candidates.length,
+        inputQuality: resultMessage.inputQuality,
+        candidates: resultMessage.candidates
+      })
       setConversationHistory(prev => [...prev, resultMessage])
 
       // Save to query history for sidebar
@@ -485,6 +507,7 @@ function App() {
           text: Math.round((data.alpha_text !== undefined ? data.alpha_text : 0.5) * 100),
           visual: Math.round((data.alpha_visual !== undefined ? data.alpha_visual : 0.5) * 100),
         },
+        inputQuality: data.input_quality || {},
         image: imagePreview,
       }
       console.log('💾 Saving to query history:', {
@@ -1429,54 +1452,62 @@ function QueryState({
                                           </p>
                                         )}
                                         {/* Input Quality / Contribution Metrics */}
-                                        {resultItem.alphaWeights && (
-                                          <div className={`text-xs mt-3 pt-3 border-t ${
-                                            darkMode ? 'border-slate-700' : 'border-slate-300'
-                                          }`}>
-                                            <p className={`font-semibold mb-2 ${
-                                              darkMode ? 'text-slate-300' : 'text-slate-700'
+                                        {resultItem && (() => {
+                                          const descScore = resultItem.inputQuality?.description_quality?.score ?? (resultItem.alphaWeights?.text || 50);
+                                          const screenshotScore = resultItem.inputQuality?.screenshot_quality?.score ?? (resultItem.alphaWeights?.visual || 50);
+                                          const total = Math.max(descScore + screenshotScore, 1);
+                                          const descPercent = Math.round((descScore / total) * 100);
+                                          const screenshotPercent = Math.max(0, 100 - descPercent);
+                                          
+                                          return (
+                                            <div className={`text-xs mt-3 pt-3 border-t ${
+                                              darkMode ? 'border-slate-700' : 'border-slate-300'
                                             }`}>
-                                              Input Quality
-                                            </p>
-                                            <div className="space-y-1.5">
-                                              <div className="flex items-center justify-between">
-                                                <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-                                                  📝 Bug Description
-                                                </span>
-                                                <span className={`font-semibold ${
-                                                  darkMode ? 'text-blue-300' : 'text-blue-600'
-                                                }`}>
-                                                  {resultItem.alphaWeights.text}%
-                                                </span>
+                                              <p className={`font-semibold mb-2 ${
+                                                darkMode ? 'text-slate-300' : 'text-slate-700'
+                                              }`}>
+                                                Input Quality
+                                              </p>
+                                              <div className="space-y-1.5">
+                                                <div className="flex items-center justify-between">
+                                                  <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
+                                                    📝 Bug Description
+                                                  </span>
+                                                  <span className={`font-semibold ${
+                                                    darkMode ? 'text-blue-300' : 'text-blue-600'
+                                                  }`}>
+                                                    {descPercent}%
+                                                  </span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                  <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
+                                                    📸 Screenshot
+                                                  </span>
+                                                  <span className={`font-semibold ${
+                                                    darkMode ? 'text-purple-300' : 'text-purple-600'
+                                                  }`}>
+                                                    {screenshotPercent}%
+                                                  </span>
+                                                </div>
                                               </div>
-                                              <div className="flex items-center justify-between">
-                                                <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-                                                  📸 Screenshot
-                                                </span>
-                                                <span className={`font-semibold ${
-                                                  darkMode ? 'text-purple-300' : 'text-purple-600'
-                                                }`}>
-                                                  {resultItem.alphaWeights.visual}%
-                                                </span>
+                                              {/* Two-color Progress Bar */}
+                                              <div className={`w-full flex h-2 rounded-full overflow-hidden mt-2 border ${
+                                                darkMode
+                                                  ? 'bg-slate-700 border-slate-600'
+                                                  : 'bg-slate-200 border-slate-300'
+                                              }`}>
+                                                <div
+                                                  className="bg-blue-500"
+                                                  style={{ width: `${descPercent}%`, minWidth: 0 }}
+                                                />
+                                                <div
+                                                  className="bg-purple-500"
+                                                  style={{ width: `${screenshotPercent}%`, minWidth: 0 }}
+                                                />
                                               </div>
                                             </div>
-                                            {/* Two-color Progress Bar */}
-                                            <div className={`flex h-2 rounded-full overflow-hidden mt-2 border ${
-                                              darkMode
-                                                ? 'bg-slate-700 border-slate-600'
-                                                : 'bg-slate-200 border-slate-300'
-                                            }`}>
-                                              <div
-                                                className="bg-blue-500"
-                                                style={{ width: `${resultItem.alphaWeights.text}%` }}
-                                              />
-                                              <div
-                                                className="bg-purple-500"
-                                                style={{ width: `${resultItem.alphaWeights.visual}%` }}
-                                              />
-                                            </div>
-                                          </div>
-                                        )}
+                                          );
+                                        })()}
                                       </div>
                                       <p className={`text-xs mt-3 text-center ${
                                         darkMode ? 'text-slate-500' : 'text-slate-600'
@@ -1862,14 +1893,22 @@ function ResultsState({ onBackToQuery, darkMode, setDarkMode, results = [], alph
                       </button>
                     </div>
 
-                    {/* Code snippet */}
-                    <pre className={`text-xs font-mono p-2 rounded overflow-x-auto max-h-32 ${
-                      darkMode
-                        ? 'bg-slate-900 text-slate-100 border border-slate-700'
-                        : 'bg-slate-900 text-slate-100'
-                    }`}>
-                      <code>{codeSnippet}</code>
-                    </pre>
+                    {/* Code snippet with Syntax Highlighting */}
+                    <SyntaxHighlighter 
+                      language="javascript" 
+                      style={vscDarkPlus}
+                      customStyle={{
+                        fontSize: '0.75rem',
+                        padding: '0.5rem',
+                        borderRadius: '0.25rem',
+                        maxHeight: '8rem',
+                        overflowX: 'auto',
+                        border: '1px solid rgb(55 65 81)'
+                      }}
+                      wrapLongLines={true}
+                    >
+                      {codeSnippet}
+                    </SyntaxHighlighter>
                   </div>
                 </div>
               )
