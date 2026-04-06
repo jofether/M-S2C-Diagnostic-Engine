@@ -1,69 +1,50 @@
 import os
+import json
 import re
-import asyncio
-from pathlib import Path
-
-# Fallback imports assuming your config.py structure
-try:
-    from config import logger, ALLOWED_EXTENSIONS, SEARCH_DIRECTORIES, IGNORE_DIRECTORIES, IGNORE_FILES
-except ImportError:
-    import logging
-    logger = logging.getLogger(__name__)
-    ALLOWED_EXTENSIONS = {'.jsx', '.js', '.tsx', '.ts', '.html'}
-    SEARCH_DIRECTORIES = ['src', 'components', 'pages', 'app', 'public']
-    IGNORE_DIRECTORIES = {'node_modules', 'build', 'dist', '.git', '__pycache__'}
-    IGNORE_FILES = {'package.json', 'package-lock.json'}
+import subprocess
 
 """
 =========================================================================================
-Repository AST Indexer - Thesis-Aligned (Based on indexer_basis.py)
+Repository AST Indexer
 =========================================================================================
-Scans repositories and extracts opening JSX/HTML tags with intelligent parsing.
+Scans full repositories and extracts opening JSX/HTML tags.
+Uses a custom state-machine parser to handle JSX complexities like arrow functions 
+(e.g., () =>) and inline conditional rendering without breaking string capture.
 
-⚠️  NOTE: This implementation uses a CUSTOM STATE-MACHINE REGEX PARSER, NOT Tree-sitter.
-The progress message "Parsing ASTs with Regex State Machine..." accurately reflects this.
-
-CUSTOM PARSER FEATURES:
-- Brace-aware look-ahead for JSX complexity
-- Depth tracking with silent closing tag handling
-- Line number injection: (L:x-y) or (L:x)
-- Self-closing tag fixes and trailing JS debris cleanup
-
-THESIS IMPROVEMENTS:
-- Maintains chronological order (no deduplication)
-- Injects line number ranges: (L:x-y) or (L:x)
-- Brace-aware look-ahead: Strips JS logic, extracts inner text
-- Depth tracking with silent closing tag handling
-- Fixes self-closing tags and trailing JS debris
-
-Supports async/await for web API integration.
+UPDATES:
+- Maintains perfect chronological order (No deduplication).
+- Injects line number ranges: (L:x-y) for multi-line tags, (L:x) for single-line.
+- Brace-Aware Look-ahead context: Strips JS logic, captures STRICTLY immediate inner text.
+- REMOVED closing tags from output (tracks depth silently).
+- FIXED trailing JS bleed (e.g., ];) in inner text extraction.
+- FIXED self-closing tag bug (aborts look-ahead for tags ending in />).
+- Git Fallback: Safely attempts 'buggy' branch, falls back to default branch if missing.
 =========================================================================================
 """
 
-# Global lock to prevent the API from processing searches while the index is building
-indexing_lock = asyncio.Lock()
-# Global flag to check if the retriever is fully loaded
-is_index_ready = False
+# ==============================================================================
+# MASTER CONFIGURATION TOGGLES
+# ==============================================================================
+IS_TESTING = True  # False = validation dataset, True = testing dataset
 
 
-def get_index_status():
-    """Returns the current index ready status."""
-    return is_index_ready
+# ==============================================================================
 
-
-def extract_ast_nodes(content: str, filepath: str) -> list:
+def extract_nodes_from_file(filepath):
     """
-    Thesis-Aligned: Synchronous State-Machine Parser with Brace-Aware Look-ahead.
-    
-    CRITICAL IMPROVEMENTS:
-    - Maintains chronological order (no deduplication)
-    - Injects line number ranges: (L:x-y) for multi-line, (L:x) for single-line
-    - Brace-aware look-ahead: Strips JS logic from inner text
-    - Fixes self-closing tag handling
-    - Fixes trailing JS debris in inner text
-    
-    This function is CPU-bound and MUST remain synchronous.
+    Scans an entire file and extracts every opening JSX/HTML tag as an AST node,
+    appending a [n] depth level indicator, line ranges, and text-only look-ahead.
     """
+    try:
+        with open(filepath, 'r', encoding='utf-8') as file:
+            content = file.read()
+    except Exception as e:
+        print(f"      -> [WARNING] Could not read {filepath}: {e}")
+        return []
+
+    # =========================================================================
+    # CUSTOM JSX STATE MACHINE PARSER
+    # =========================================================================
     raw_tags = []
     i = 0
     n = len(content)
@@ -81,26 +62,25 @@ def extract_ast_nodes(content: str, filepath: str) -> list:
 
                     if char in ["'", '"', '`']:
                         if in_quotes == char:
-                            if j > 0 and content[j - 1] != '\\':
+                            if content[j - 1] != '\\':
                                 in_quotes = None
                         elif not in_quotes:
                             in_quotes = char
-                            
+
                     elif char == '{' and not in_quotes:
                         brace_depth += 1
                     elif char == '}' and not in_quotes:
                         brace_depth = max(0, brace_depth - 1)
-                        
+
                     elif char == '>' and not in_quotes and brace_depth == 0:
                         tag_string = content[start:j + 1]
-                        
-                        # Calculate line ranges
+
+                        # Calculate Start and End Lines
                         start_line = content.count('\n', 0, start) + 1
                         end_line = content.count('\n', 0, j) + 1
 
                         lookahead_info = ""
 
-                        # Brace-aware look-ahead for inner text (skip JS logic)
                         if not tag_string.strip().endswith('/>'):
                             k = j + 1
                             inner_content = ""
@@ -119,7 +99,6 @@ def extract_ast_nodes(content: str, filepath: str) -> list:
 
                             stripped_inner = inner_content.strip()
                             if stripped_inner:
-                                # Remove trailing JS debris: ];,}])
                                 clean_text = re.sub(r'^[\]\};,\s]+|[\]\};,\s]+$', '', stripped_inner)
                                 if clean_text:
                                     clean_text = " ".join(clean_text.split())
@@ -131,8 +110,10 @@ def extract_ast_nodes(content: str, filepath: str) -> list:
                     j += 1
         i += 1
 
-    # Depth tracking (silent closing tags)
-    parsed_nodes = []
+    # =========================================================================
+    # DEPTH TRACKING & FORMATTING (SILENT CLOSING TAGS)
+    # =========================================================================
+    nodes = []
     current_depth = 0
 
     for tag_string, s_line, e_line, lookahead_info in raw_tags:
@@ -143,129 +124,93 @@ def extract_ast_nodes(content: str, filepath: str) -> list:
         else:
             node_depth = current_depth + 1
 
-            # Line range formatting
+            # Line Range Formatting
             if s_line == e_line:
                 line_marker = f"(L:{s_line})"
             else:
                 line_marker = f"(L:{s_line}-{e_line})"
 
             formatted_node = f"[{node_depth}] {line_marker} {clean_tag}{lookahead_info}"
-            parsed_nodes.append({
-                "file_path": filepath,
-                "line_number": s_line,
-                "code_snippet": formatted_node
-            })
+            nodes.append(formatted_node)
 
             if not clean_tag.endswith("/>") and clean_tag != "<>":
                 current_depth += 1
 
-    return parsed_nodes
+    return nodes
 
 
-def build_index_sync(repo_path: str) -> dict:
-    """
-    Synchronous directory traversal and AST extraction.
-    This performs heavy file I/O and CPU-bound parsing.
-    """
-    index_dict = {}
-    repo_root = Path(repo_path)
-    
-    if not repo_root.exists():
-        logger.error(f"Repository path does not exist: {repo_path}")
-        return index_dict
+def run_repo_indexer():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    prefix = "testing_repository" if IS_TESTING else "validation_repository"
+    res_prefix = f"{prefix}_results"
 
-    logger.info(f"Starting synchronous file scan at: {repo_path}")
+    json_path = os.path.join(base_dir, prefix, f"{prefix.split('_')[0]}_dataset.json")
+    results_dir = os.path.join(base_dir, res_prefix, "indexed_nodes")
+    repos_dir = os.path.join(base_dir, prefix, "cloned_repos")
 
-    for root, dirs, files in os.walk(repo_root):
-        # Mutate dirs in-place to skip ignored directories
-        dirs[:] = [d for d in dirs if d not in IGNORE_DIRECTORIES]
-        
-        # Optional: Only scan inside specific frontend folders if defined
-        rel_path = Path(root).relative_to(repo_root).parts
-        if SEARCH_DIRECTORIES and rel_path and rel_path[0] not in SEARCH_DIRECTORIES:
-            continue
+    os.makedirs(repos_dir, exist_ok=True)
+    os.makedirs(results_dir, exist_ok=True)
 
-        for file in files:
-            if file in IGNORE_FILES:
-                continue
-                
-            filepath = Path(root) / file
-            if filepath.suffix in ALLOWED_EXTENSIONS:
+    print(f"[TRACE] Loading repository queries from {json_path}...")
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            queries_data = json.load(f)
+    except FileNotFoundError:
+        print(f"[ERROR] Could not find query dataset at {json_path}")
+        return
+
+    unique_repos = list(set([item["github_repo"] for item in queries_data]))
+    print(f"[TRACE] Processing {len(unique_repos)} repositories.")
+
+    for repo_url in unique_repos:
+        repo_name = repo_url.split("/")[-1]
+        if repo_name.endswith(".git"):
+            repo_name = repo_name[:-4]
+
+        repo_path = os.path.join(repos_dir, repo_name)
+
+        if not os.path.exists(repo_path):
+            print(f"\n[TRACE] Attempting to clone the 'buggy' branch of {repo_name} from GitHub...")
+            try:
+                subprocess.run(["git", "clone", "-b", "buggy", "--single-branch", repo_url, repo_path], check=True)
+            except subprocess.CalledProcessError:
+                print(f"[WARNING] The 'buggy' branch does not exist for {repo_name}. Falling back to default branch...")
                 try:
-                    with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-                        content = f.read()
-                        
-                    relative_filepath = str(filepath.relative_to(repo_root)).replace('\\', '/')
-                    nodes = extract_ast_nodes(content, relative_filepath)
-                    
+                    subprocess.run(["git", "clone", repo_url, repo_path], check=True)
+                except subprocess.CalledProcessError as e:
+                    print(f"[ERROR] Failed to clone {repo_name} completely: {e}")
+                    continue
+        else:
+            print(f"\n[TRACE] Repository {repo_name} already cloned locally. Skipping download.")
+
+        print(f"[TRACE] Traversing files and indexing AST nodes in {repo_name}...")
+        repo_index = {}
+        total_nodes = 0
+
+        for root, dirs, files in os.walk(repo_path):
+            dirs[:] = [d for d in dirs if
+                       not d.startswith('.') and d not in ['node_modules', 'dist', 'build', 'coverage']]
+
+            for file in files:
+                if file.endswith((".jsx", ".js", ".tsx", ".ts")):
+                    full_filepath = os.path.join(root, file)
+
+                    relative_path = os.path.relpath(full_filepath, repo_path)
+                    relative_path = relative_path.replace("\\", "/")
+
+                    nodes = extract_nodes_from_file(full_filepath)
+
                     if nodes:
-                        index_dict[relative_filepath] = nodes
-                        
-                except Exception as e:
-                    logger.warning(f"Failed to read/parse {filepath}: {e}")
+                        repo_index[relative_path] = nodes
+                        total_nodes += len(nodes)
 
-    logger.info(f"✅ Scanning complete: {len(index_dict)} files indexed with AST nodes.")
-    return index_dict
+        output_path = os.path.join(results_dir, f"{repo_name}.json")
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(repo_index, f, indent=4)
 
-
-async def build_index_async(repo_path: str) -> dict:
-    """
-    CRITICAL FIX #4: Async Wrapper for Web API.
-    Uses asyncio.to_thread() to offload the heavy CPU-bound state-machine parser
-    to a background thread. This allows FastAPI to continue serving other network
-    requests (like health checks or image uploads) while the codebase is indexed.
-    """
-    logger.info("Offloading AST parsing to background thread...")
-    index_dict = await asyncio.to_thread(build_index_sync, repo_path)
-    return index_dict
+        print(f"[TRACE] SUCCESS: Indexed {total_nodes} nodes across {len(repo_index)} files in {repo_name}.")
+        print(f"[TRACE] Library saved to {output_path}")
 
 
-async def reindex_retriever(retriever, index_dict: dict):
-    """
-    CRITICAL FIX #5: Global Retriever State & VRAM Management.
-    Updates the MS2C vectors globally. Uses an async lock so users cannot search 
-    while the model is pushing batches to the GPU.
-    """
-    global is_index_ready
-    
-    # 1. Lock the global state so no searches happen during embedding
-    async with indexing_lock:
-        is_index_ready = False
-        try:
-            import torch
-            # Clear CUDA cache before starting a massive embedding run
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-                
-            total_snippets = sum(len(snippets) for snippets in index_dict.values())
-            logger.info(f"🔄 Re-indexing retriever with {len(index_dict)} files ({total_snippets} snippets)...")
-            
-            # 2. VRAM Safety: Reduce batch size.
-            # You previously used 128 which caused OOM crashes and silent node dropping. 
-            # A batch size of 32 or 64 is much safer for a live API processing CodeBERT vectors.
-            SAFE_BATCH_SIZE = 64
-            
-            # Assuming your retriever has a synchronous _flatten_and_encode method.
-            # If the CodeBERT encoding takes too long, we also offload it to a thread.
-            await asyncio.to_thread(
-                retriever._flatten_and_encode, 
-                index_dict, 
-                batch_size=SAFE_BATCH_SIZE
-            )
-            
-            # 3. Mark the index as ready for API consumption
-            is_index_ready = True
-            logger.info(f"✅ Global Retriever re-indexed successfully. Ready for searches.")
-            
-        except Exception as e:
-            is_index_ready = False
-            logger.error(f"❌ Fatal error re-indexing retriever: {str(e)}")
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
-            raise e
-
-# Example usage in FastAPI main.py or routes.py during startup:
-# @app.on_event("startup")
-# async def startup_event():
-#     index_data = await build_index_async("./my_frontend_repo")
-#     await reindex_retriever(app.state.retriever, index_data)
+if __name__ == "__main__":
+    run_repo_indexer()
