@@ -431,6 +431,9 @@ function App() {
     try {
       const formData = new FormData()
       
+      // Add repository URL (required for MS2C search endpoint)
+      formData.append('repo_url', repositoryUrl)
+      
       // CRITICAL: Append target file hint to bug description if selected
       let finalDescription = bugDescription.trim()
       if (targetFileHint && targetFileHint.trim()) {
@@ -438,6 +441,11 @@ function App() {
       }
       
       formData.append('bug_description', finalDescription)
+      
+      // Add target file separately for scoping
+      if (targetFileHint && targetFileHint.trim()) {
+        formData.append('target_file', targetFileHint)
+      }
       
       // Only append screenshot if one was uploaded
       if (uploadedFile) {
@@ -451,45 +459,55 @@ function App() {
         console.log('   screenshot name:', uploadedFile.name)
         console.log('   screenshot size:', uploadedFile.size, 'bytes')
       }
-      console.log('🔍 Attempting diagnosis fetch from:', 'http://localhost:8000/api/diagnose')
+      console.log('🔍 Attempting MS2C search from:', 'http://localhost:8000/api/ms2c-search')
       console.log('   Time:', new Date().toLocaleTimeString())
 
-      const response = await fetch('http://localhost:8000/api/diagnose', {
+      const response = await fetch('http://localhost:8000/api/ms2c-search', {
         method: 'POST',
         body: formData,
       })
 
-      console.log('📡 Diagnosis response status:', response.status)
+      console.log('📡 MS2C search response status:', response.status)
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('❌ Diagnosis HTTP Error:', response.status, errorText)
+        console.error('❌ MS2C HTTP Error:', response.status, errorText)
         throw new Error(`HTTP ${response.status}: ${errorText}`)
       }
 
       const data = await response.json()
-      console.log('📥 Diagnosis response received:', data)
+      console.log('📥 MS2C search response received:', data)
       console.log('   Response type:', typeof data)
       console.log('   Response keys:', Object.keys(data))
-      console.log('   candidates array:', data.candidates)
-      console.log('   candidates type:', typeof data.candidates)
-      console.log('   candidates length:', data.candidates ? data.candidates.length : 'null/undefined')
+      console.log('   results array:', data.results)
+      console.log('   results type:', typeof data.results)
+      console.log('   results length:', data.results ? data.results.length : 'null/undefined')
+
+      // Convert MS2C results format to candidates format for frontend compatibility
+      const candidates = (data.results || []).map((result, idx) => ({
+        filepath: result.file,
+        code: result.code,
+        lines: result.lines,
+        name: result.name,
+        explanation: result.explanation,
+        confidence: result.confidence,
+        rank: idx + 1
+      }))
 
       // Add result to conversation
       const resultMessage = {
         id: Date.now() + 1,
         type: 'result',
-        candidates: data.candidates || [],
+        candidates: candidates,
         alphaWeights: {
           text: Math.round((data.alpha_text !== undefined ? data.alpha_text : 0.5) * 100),
           visual: Math.round((data.alpha_visual !== undefined ? data.alpha_visual : 0.5) * 100),
         },
-        inputQuality: data.input_quality || {},
+        inputQuality: {},
       }
       console.log('📋 resultMessage being set:', {
         id: resultMessage.id,
         candidatesCount: resultMessage.candidates.length,
-        inputQuality: resultMessage.inputQuality,
         candidates: resultMessage.candidates
       })
       setConversationHistory(prev => [...prev, resultMessage])
@@ -1453,11 +1471,19 @@ function QueryState({
                                         )}
                                         {/* Input Quality / Contribution Metrics */}
                                         {resultItem && (() => {
-                                          const descScore = resultItem.inputQuality?.description_quality?.score ?? (resultItem.alphaWeights?.text || 50);
-                                          const screenshotScore = resultItem.inputQuality?.screenshot_quality?.score ?? (resultItem.alphaWeights?.visual || 50);
-                                          const total = Math.max(descScore + screenshotScore, 1);
-                                          const descPercent = Math.round((descScore / total) * 100);
-                                          const screenshotPercent = Math.max(0, 100 - descPercent);
+                                          // Alpha values can be 0.0-1.0 (decimal) or 0-100 (percentage)
+                                          // Detect format and normalize to 0-100 range
+                                          let alphaText = resultItem.alpha_text ?? resultItem.alphaWeights?.text ?? 0.67;
+                                          let alphaVisual = resultItem.alpha_visual ?? resultItem.alphaWeights?.visual ?? 0.33;
+                                          
+                                          // If values are in decimal form (0.0-1.0), convert to percentage
+                                          if (alphaText < 2) {  // Likely decimal format
+                                            alphaText = alphaText * 100;
+                                            alphaVisual = alphaVisual * 100;
+                                          }
+                                          
+                                          const descPercent = Math.round(alphaText);
+                                          const screenshotPercent = Math.round(alphaVisual);
                                           
                                           return (
                                             <div className={`text-xs mt-3 pt-3 border-t ${

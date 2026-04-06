@@ -8,12 +8,13 @@ import json
 import shutil
 import tempfile
 import asyncio
+import subprocess
 from datetime import datetime
 from fastapi import UploadFile, File, Form, WebSocket, WebSocketDisconnect
 
 from config import logger, app_state
 from repository import clone_repository
-from indexer import build_index_sync, reindex_retriever, get_index_status
+from indexer import build_index_sync, reindex_retriever, get_index_status, extract_nodes_from_file, extract_branch_from_url
 from utils import compute_gating_weight, generate_smart_results
 from input_quality import InputQualityAnalyzer
 
@@ -184,200 +185,176 @@ def setup_routes(app, retriever, pytorch_available):
     @app.post("/api/index-repository")
     async def index_repository(repo_url: str = Form(...)):
         """
-        Performs the complete offline indexing workflow:
-        1. Shallow clone the GitHub repository
-        2. Extract React components using custom regex state-machine AST parser
-        3. Build index dictionary mapping files to code snippets
-        4. Re-encode through CodeBERT via MS2CRetriever
-        5. Cache index to disk
-        6. Cleanup temporary files
+        Performs indexing using the new validate.py workflow:
+        1. Parses GitHub URL (handles branch: /tree/branch)
+        2. Clones repository (or branch-specific version)
+        3. Extracts JSX/TSX/JS/TS components using regex state-machine
+        4. Saves to indexed_nodes/repo_name.json
+        5. Initializes MS2CRetriever for frontend queries
         
         Returns:
             JSON response with indexing statistics
         """
         
-        # CRITICAL: Reset progress state for new indexing run
-        global index_progress_state
-        index_progress_state["is_indexing"] = True
-        index_progress_state["current_message"] = ""
-        index_progress_state["progress_percent"] = 0
-        index_progress_state["total_files"] = 0
-        index_progress_state["processed_files"] = 0
+        global index_progress_state, global_indexed_data
         
-        temp_dir = None
+        index_progress_state["is_indexing"] = True
+        index_progress_state["current_message"] = "Initializing repository clone..."
+        index_progress_state["progress_percent"] = 0
         
         try:
-            # Initialize progress tracking for WebSocket
-            index_progress_state["is_indexing"] = True
-            index_progress_state["current_message"] = "Initializing repository clone..."
-            index_progress_state["progress_percent"] = 0
-            
             print(f"\n{'='*60}")
-            print(f"📥 INDEXING REPOSITORY: {repo_url}")
+            print(f"📥 MS2C INDEXING: {repo_url}")
             print(f"{'='*60}")
             
-            # Create temporary directory
-            temp_dir = tempfile.mkdtemp(prefix="ms2c_repo_")
-            print(f"📁 Temp directory: {temp_dir}")
+            # Parse repository URL and extract branch if present
+            repo_url_clean, branch_name = extract_branch_from_url(repo_url)
+            repo_name = repo_url_clean.split("/")[-1].replace(".git", "")
+            display_name = f"{repo_name} (branch: {branch_name})" if branch_name else repo_name
             
-            # Step 1: Clone repository
-            index_progress_state["current_message"] = "Cloning repository..."
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            repos_dir = os.path.join(current_dir, "cloned_repos")
+            results_dir = os.path.join(current_dir, "indexed_nodes")
+            os.makedirs(repos_dir, exist_ok=True)
+            os.makedirs(results_dir, exist_ok=True)
+            
+            # Determine repository path (include branch in folder name)
+            if branch_name:
+                repo_path = os.path.join(repos_dir, f"{repo_name}_{branch_name}")
+            else:
+                repo_path = os.path.join(repos_dir, repo_name)
+            
+            # Clone repository
+            index_progress_state["current_message"] = f"Cloning {display_name}..."
             index_progress_state["progress_percent"] = 10
-            clone_success = clone_repository(repo_url, temp_dir)
-            if not clone_success:
-                index_progress_state["is_indexing"] = False
-                return {
-                    "status": "error",
-                    "message": "Failed to clone repository. Check URL and Git installation.",
-                    "files_indexed": 0,
-                    "snippets_indexed": 0
-                }
             
-            # Step 2 & 3: Build index from cloned repo
+            if not os.path.exists(repo_path):
+                print(f"📥 Cloning: {display_name}")
+                try:
+                    if branch_name:
+                        subprocess.run(
+                            ["git", "clone", "-b", branch_name, "--single-branch", repo_url_clean, repo_path],
+                            check=True,
+                            capture_output=True
+                        )
+                    else:
+                        subprocess.run(
+                            ["git", "clone", repo_url_clean, repo_path],
+                            check=True,
+                            capture_output=True
+                        )
+                    print(f"✅ Repository cloned successfully")
+                except subprocess.CalledProcessError as e:
+                    print(f"❌ Clone failed: {e}")
+                    index_progress_state["is_indexing"] = False
+                    return {
+                        "status": "error",
+                        "message": f"Failed to clone repository: {str(e)}",
+                        "files_indexed": 0,
+                        "snippets_indexed": 0
+                    }
+            else:
+                print(f"✅ Repository already exists, skipping clone")
+            
+            # Extract AST nodes from repository
             index_progress_state["current_message"] = "Parsing ASTs with Regex State Machine..."
-            index_progress_state["progress_percent"] = 30
-            print("\n🔍 Extracting components and building index...")
-            index_dict = build_index_sync(temp_dir)
+            index_progress_state["progress_percent"] = 40
             
-            if not index_dict:
+            print(f"🔍 Extracting components from: {repo_path}")
+            repo_index = {}
+            total_nodes = 0
+            
+            for root, dirs, files in os.walk(repo_path):
+                # Filter out heavy folders
+                dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['node_modules', 'dist', 'build', 'coverage']]
+                
+                for file in files:
+                    if file.endswith((".jsx", ".js", ".tsx", ".ts")):
+                        full_filepath = os.path.join(root, file)
+                        relative_path = os.path.relpath(full_filepath, repo_path).replace("\\", "/")
+                        
+                        nodes = extract_nodes_from_file(full_filepath)
+                        if nodes:
+                            repo_index[relative_path] = nodes
+                            total_nodes += len(nodes)
+            
+            if not repo_index:
                 index_progress_state["is_indexing"] = False
                 return {
                     "status": "warning",
-                    "message": "Repository cloned but no frontend files found. Check repository structure.",
+                    "message": "Repository cloned but no frontend files (.jsx, .js, .tsx, .ts) found.",
                     "files_indexed": 0,
                     "snippets_indexed": 0
                 }
             
-            total_snippets = sum(len(snippets) for snippets in index_dict.values())
-            print(f"\n📊 INDEX BUILT:")
-            print(f"   Files: {len(index_dict)}")
-            print(f"   Total Snippets: {total_snippets}")
-            print(f"\n📋 Files indexed:")
+            print(f"✅ Extracted {total_nodes} nodes from {len(repo_index)} files")
             
-            # Log to file as well
-            logger.info(f"\n📊 INDEX BUILT: Files: {len(index_dict)}, Snippets: {total_snippets}")
-            logger.info("📋 Files indexed:")
-            
-            for file_path in sorted(index_dict.keys())[:10]:
-                print(f"   ✓ {file_path}")
-                logger.info(f"   ✓ {file_path}")
-            if len(index_dict) > 10:
-                print(f"   ... and {len(index_dict) - 10} more files")
-                logger.info(f"   ... and {len(index_dict) - 10} more files")
-            
-            # Step 4: Update global indexed data and re-encode through retriever
-            index_progress_state["current_message"] = "Generating CodeBERT Embeddings..."
+            # Save index to disk
+            index_progress_state["current_message"] = "Saving index to disk..."
             index_progress_state["progress_percent"] = 60
-            global global_indexed_data
-            global_indexed_data = index_dict
-            print(f"\n🔄 Updating global index...")
-            logger.info(f"🔄 Starting CodeBERT embedding generation for {len(index_dict)} files...")
-            await reindex_retriever(retriever, index_dict)
-            print(f"✅ CodeBERT embeddings generated")
-            logger.info(f"✅ CodeBERT embeddings complete")
             
-            # Step 5: Cache to disk - FAISS population stage
-            index_progress_state["current_message"] = "Populating FAISS Vector Database..."
-            index_progress_state["progress_percent"] = 90
-            print(f"\n💾 Populating FAISS vector database...")
-            logger.info(f"💾 Starting FAISS database population...")
+            output_path = os.path.join(results_dir, f"{repo_name}.json")
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(repo_index, f, indent=4)
             
-            cache_path = "indexed_repository.json"
-            cache_data = {
-                "repo_url": repo_url,
-                "timestamp": str(datetime.now()),
-                "files_indexed": len(index_dict),
-                "snippets_indexed": total_snippets,
-                "index_dict": {
-                    file_path: snippets 
-                    for file_path, snippets in list(index_dict.items())[:20]  # Save preview
-                }
-            }
+            print(f"💾 Index saved to: {output_path}")
             
-            with open(cache_path, "w") as f:
-                json.dump(cache_data, f, indent=2)
+            # Initialize MS2CRetriever for this repository
+            index_progress_state["current_message"] = "Generating CodeBERT Embeddings..."
+            index_progress_state["progress_percent"] = 80
             
-            print(f"✅ FAISS database populated and cached to: {cache_path}")
-            logger.info(f"✅ FAISS database ready, index cached to: {cache_path}")
+            print(f"🧠 Initializing MS2CRetriever...")
+            from ms2c import MS2CRetriever
+            model_weights = os.path.join(current_dir, "ms2c_E2E_JOINT_BEST.pt")
+            retriever_instance = MS2CRetriever(model_weights, repo_index, repos_dir=repos_dir)
             
-            # Hold 90% for 500ms to ensure clients (polling at 250ms) definitely see it
-            await asyncio.sleep(0.5)
+            print(f"✅ MS2CRetriever ready with {len(retriever_instance.global_corpus)} code snippets")
             
-            # Update app state
+            # Update global state
+            global_indexed_data = repo_index
             app_state.set_repository(repo_url)
             app_state.is_indexed = True
-            app_state.file_count = len(index_dict)
-            app_state.snippet_count = total_snippets
+            app_state.file_count = len(repo_index)
+            app_state.snippet_count = total_nodes
             
-            # Update progress to completion (NOW set to 100%)
+            # Complete
             index_progress_state["current_message"] = "Indexing Complete!"
             index_progress_state["progress_percent"] = 100
-            print(f"\n✅ INDEXING COMPLETE - All 100% done!")
-            logger.info(f"✅ Indexing pipeline complete: {len(index_dict)} files, {total_snippets} snippets")
+            index_progress_state["is_indexing"] = False
             
             print(f"\n✅ INDEXING COMPLETE")
             print(f"{'='*60}\n")
             
-            # Extract unique file paths without line numbers
-            unique_files = sorted(list(set(
-                key.split(' (Lines')[0] for key in index_dict.keys()
-            )))
+            # Extract unique file paths
+            unique_files = sorted(list(repo_index.keys()))
             
-            print(f"📁 EXTRACTED FILES FOR API RESPONSE:")
-            print(f"   Total unique files: {len(unique_files)}")
-            for f in unique_files:
-                print(f"   ✓ {f}")
-            
-            response_data = {
+            return {
                 "status": "success",
                 "message": f"Repository successfully indexed!",
-                "repository": repo_url,
-                "files_indexed": len(index_dict),
-                "snippets_indexed": total_snippets,
+                "repository": display_name,
+                "files_indexed": len(repo_index),
+                "snippets_indexed": total_nodes,
                 "files": unique_files,
                 "timestamp": str(datetime.now()),
-                "is_index_ready": get_index_status()
+                "is_index_ready": True
             }
-            
-            print(f"\n📤 API Response files array: {response_data['files']}")
-            print(f"   Type: {type(response_data['files'])}")
-            print(f"   Count: {len(response_data['files'])}")
-            print(f"   is_index_ready: {response_data['is_index_ready']}")
-            print(f"\n✅ ABOUT TO RETURN RESPONSE TO CLIENT")
-            print(f"{'='*60}\n")
-            
-            return response_data
             
         except Exception as e:
             print(f"❌ Indexing failed: {e}")
             import traceback
-            tb_str = traceback.format_exc()
             traceback.print_exc()
-            print(f"\nFull Traceback:\n{tb_str}")
-            logger.error(f"❌ Indexing failed: {e}")
-            logger.error(f"Traceback: {tb_str}")
-            error_response = {
+            index_progress_state["is_indexing"] = False
+            logger.error(f"❌ Indexing error: {e}\n{traceback.format_exc()}")
+            return {
                 "status": "error",
-                "message": f"Indexing error: {str(e)}",
-                "error_details": tb_str,
+                "message": f"Indexing failed: {str(e)}",
                 "files_indexed": 0,
                 "snippets_indexed": 0
             }
-            print(f"❌ RETURNING ERROR RESPONSE: {error_response}")
-            # Reset progress on error
-            index_progress_state["is_indexing"] = False
-            return error_response
         
         finally:
-            # Step 6: Cleanup temp directory
-            if temp_dir and os.path.exists(temp_dir):
-                try:
-                    shutil.rmtree(temp_dir)
-                    print(f"🗑️  Cleaned up temporary directory: {temp_dir}")
-                except Exception as e:
-                    print(f"⚠️  Could not cleanup temp directory: {e}")
-            # Always reset progress state
-            index_progress_state["is_indexing"] = False
+            # Ensure progress state is reset
+            await asyncio.sleep(0.1)  # Brief pause before next operation
     
     
     @app.post("/api/diagnose")
@@ -704,6 +681,278 @@ def setup_routes(app, retriever, pytorch_available):
             "repository_indexed": app_state.is_indexed,
             "indexed_repository": app_state.indexed_repo_url
         }
+    
+    
+    @app.post("/api/ms2c-search")
+    async def ms2c_search(repo_url: str = Form(...), bug_description: str = Form(...), 
+                          screenshot: UploadFile = File(None), target_file: str = Form(None)):
+        """
+        MS2C Unified Search Endpoint - Uses validate.py workflow
+        
+        This is the primary search endpoint that:
+        1. Extracts branch from GitHub URL (if provided in /tree/ format)
+        2. Loads the indexed JSON from indexed_nodes/
+        3. Initializes MS2CRetriever with the loaded index
+        4. Executes 4-stage retrieval pipeline
+        5. Returns top 10 results with confidence scores
+        
+        Args:
+            repo_url: GitHub repository URL (can include branch: https://github.com/user/repo/tree/branch)
+            bug_description: User's bug description or search query
+            screenshot: Optional screenshot image for multimodal search
+            target_file: Optional target file to scope search to
+        
+        Returns:
+            JSON with 10 search results and gating weights
+        """
+        from ms2c import MS2CRetriever
+        import re
+        
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # Extract branch from URL if present
+        def extract_branch_from_url(url):
+            if '/tree/' in url:
+                parts = url.split('/tree/')
+                base_url = parts[0]
+                branch_name = parts[1].strip().replace('.git', '')
+                return base_url, branch_name
+            return url, None
+        
+        try:
+            print(f"\n{'='*60}")
+            print(f"🔍 MS2C SEARCH ENDPOINT")
+            print(f"{'='*60}")
+            print(f"📝 Query: {bug_description[:80]}...")
+            print(f"📦 Repository: {repo_url}")
+            if screenshot:
+                print(f"🖼️  Screenshot: {screenshot.filename}")
+            if target_file:
+                print(f"🎯 Target file: {target_file}")
+            
+            # 1. Parse repository URL
+            repo_url_clean, branch_name = extract_branch_from_url(repo_url)
+            repo_name = repo_url_clean.split("/")[-1].replace(".git", "")
+            
+            # 2. Load indexed repository
+            index_dir = os.path.join(current_dir, "indexed_nodes")
+            index_path = os.path.join(index_dir, f"{repo_name}.json")
+            
+            print(f"\n🔍 INDEX LOOKUP:")
+            print(f"   Repo URL: {repo_url}")
+            print(f"   Cleaned URL: {repo_url_clean}")
+            print(f"   Repo name extracted: {repo_name}")
+            print(f"   Looking for: {index_path}")
+            
+            # List what's available in indexed_nodes
+            if os.path.exists(index_dir):
+                available_indexes = os.listdir(index_dir)
+                print(f"   Available indexes: {available_indexes}")
+            else:
+                print(f"   indexed_nodes directory doesn't exist yet!")
+            
+            if not os.path.exists(index_path):
+                print(f"❌ Index not found: {index_path}")
+                logger.error(f"❌ Index not found for {repo_name}")
+                return {
+                    "status": "error",
+                    "message": f"Repository '{repo_name}' not indexed. Please index it first. Available indexes: {os.listdir(index_dir) if os.path.exists(index_dir) else 'none'}",
+                    "results": [],
+                    "alpha_text": 0.5,
+                    "alpha_visual": 0.5
+                }
+            
+            # 3. Load index and initialize retriever
+            print(f"✅ Loading index from: {index_path}")
+            with open(index_path, 'r', encoding='utf-8') as f:
+                repo_index = json.load(f)
+            
+            print(f"\n📊 INDEX LOADED:")
+            print(f"   Total files in index: {len(repo_index)}")
+            total_nodes = sum(len(nodes) for nodes in repo_index.values())
+            print(f"   Total nodes: {total_nodes}")
+            if len(repo_index) <= 5:
+                for file_path, nodes in repo_index.items():
+                    print(f"     {file_path}: {len(nodes)} nodes")
+            
+            if not repo_index:
+                print(f"❌ Index is empty!")
+                return {
+                    "status": "error",
+                    "message": "Index loaded but is empty. Try indexing again.",
+                    "results": [],
+                    "alpha_text": 0.5,
+                    "alpha_visual": 0.5
+                }
+            
+            # Directory structure: cloned_repos/Apex_buggy/
+            repos_root = os.path.join(current_dir, "cloned_repos")
+            model_weights = os.path.join(current_dir, "ms2c_E2E_JOINT_BEST.pt")
+            
+            print(f"🧠 Initializing MS2CRetriever with {len(repo_index)} files ({total_nodes} total nodes)...")
+            retriever = MS2CRetriever(model_weights, repo_index, repos_dir=repos_root)
+            
+            print(f"\n✅ MS2CRetriever initialized:")
+            print(f"   global_corpus length: {len(retriever.global_corpus)}")
+            print(f"   global_embeddings: {retriever.global_embeddings is not None}")
+            if retriever.global_embeddings is not None:
+                print(f"   global_embeddings shape: {retriever.global_embeddings.shape}")
+            print(f"   unique_files: {len(retriever.unique_files)}")
+            
+            if len(retriever.global_corpus) == 0:
+                print(f"❌ ERROR: Retriever corpus is empty after initialization!")
+                return {
+                    "status": "error",
+                    "message": "Retriever corpus is empty. Check index format.",
+                    "results": [],
+                    "alpha_text": 0.5,
+                    "alpha_visual": 0.5
+                }
+            
+            # 4. Handle screenshot if provided
+            temp_image_path = None
+            if screenshot:
+                image_bytes = await screenshot.read()
+                temp_image_path = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
+                with open(temp_image_path, 'wb') as f:
+                    f.write(image_bytes)
+                print(f"💾 Saved screenshot to: {temp_image_path}")
+                mode = "multimodal"
+            else:
+                mode = "unimodal"
+                print(f"📝 Running in TEXT-ONLY mode")
+            
+            # 5. Execute MS2C retrieval pipeline
+            print(f"🔍 Running 4-stage retrieval pipeline...")
+            print(f"   Query: {bug_description[:80]}...")
+            print(f"   Corpus size: {len(retriever.global_corpus)}")
+            
+            try:
+                results, alpha_val = retriever.retrieve_top_k(
+                    text_query=bug_description,
+                    target_key=target_file,
+                    image_path=temp_image_path,
+                    k=10,
+                    mode=mode,
+                    scope="repository"
+                )
+                
+                # ms2c.py returns (results, alpha_val) where alpha_val is 0.0-1.0
+                alpha_text = alpha_val
+                alpha_visual = 1.0 - alpha_val
+                
+                print(f"✅ retrieve_top_k returned {len(results)} results")
+                print(f"   Alpha value: {alpha_val:.4f}")
+                
+                if len(results) == 0:
+                    print(f"   ⚠️  EMPTY RESULTS - Pipeline filtering excluded everything")
+                    print(f"   This likely means the document filtration step (Stage 2) rejected all items")
+                    
+            except Exception as e:
+                print(f"❌ retrieve_top_k error: {e}")
+                import traceback
+                print(traceback.format_exc())
+                logger.error(f"❌ Retrieval failed: {e}\n{traceback.format_exc()}")
+                return {
+                    "status": "error",
+                    "message": f"Retrieval pipeline error: {str(e)[:100]}",
+                    "results": [],
+                    "alpha_text": 0.5,
+                    "alpha_visual": 0.5
+                }
+            
+            # 6. Format results for frontend
+            formatted_results = []
+            print(f"\n📋 FORMATTING RESULTS:")
+            print(f"   Total results from pipeline: {len(results)}")
+            print(f"   Result type: {type(results)}")
+            if len(results) > 0:
+                print(f"   First result type: {type(results[0])}")
+                if isinstance(results[0], (tuple, list)) and len(results[0]) > 0:
+                    print(f"   First result length: {len(results[0])}")
+                    print(f"   First result sample: {str(results[0])[:100]}...")
+            
+            for idx, result in enumerate(results):
+                try:
+                    # Results format depends on retrieve_top_k return structure
+                    # Typically: (file_path, code_snippet) or (file_path, code_snippet, score)
+                    if isinstance(result, dict):
+                        # If it's already a dict, use as-is
+                        formatted_results.append(result)
+                        continue
+                    
+                    if isinstance(result, tuple):
+                        if len(result) == 3:
+                            file_path, code_snippet, score = result
+                        elif len(result) == 2:
+                            file_path, code_snippet = result
+                            score = 0.85 - (idx * 0.05)  # Fallback scoring
+                        else:
+                            print(f"   ⚠️  Unexpected tuple length: {len(result)}")
+                            continue
+                    else:
+                        print(f"   ⚠️  Unexpected result type: {type(result)}")
+                        continue
+                    
+                    # Extract line numbers if present
+                    line_match = re.search(r'\(L:(\d+)(?:-(\d+))?\)', file_path)
+                    if line_match:
+                        start = line_match.group(1)
+                        end = line_match.group(2) or start
+                        lines = f"{start}-{end}"
+                        clean_file_path = re.sub(r'\s*\(L:\d+(?:-\d+)?\)', '', file_path)
+                    else:
+                        lines = "?"
+                        clean_file_path = file_path
+                    
+                    file_name = clean_file_path.split('/')[-1]
+                    
+                    formatted_results.append({
+                        "rank": idx + 1,
+                        "name": file_name,
+                        "file": clean_file_path,
+                        "lines": lines,
+                        "code": code_snippet.strip() if isinstance(code_snippet, str) else str(code_snippet),
+                        "confidence": round(float(score), 4) if isinstance(score, (int, float)) else 0.5,
+                        "explanation": f"Found in {file_name} - relevant code snippet"
+                    })
+                    
+                except Exception as e:
+                    logger.error(f"❌ Error formatting result {idx}: {e}")
+                    continue
+            
+            # Clean up temp image if created
+            if temp_image_path and os.path.exists(temp_image_path):
+                try:
+                    os.unlink(temp_image_path)
+                except:
+                    pass
+            
+            print(f"📤 Returning {len(formatted_results)} formatted results to frontend")
+            logger.info(f"✅ MS2C search completed: {len(formatted_results)} results")
+            
+            return {
+                "status": "success",
+                "results": formatted_results,
+                "alpha_text": float(alpha_text),
+                "alpha_visual": float(alpha_visual),
+                "repository": repo_name,
+                "branch": branch_name or "default",
+                "query": bug_description,
+                "result_count": len(formatted_results)
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ MS2C search failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "status": "error",
+                "message": f"Search failed: {str(e)}",
+                "results": [],
+                "alpha_text": 0.5,
+                "alpha_visual": 0.5
+            }
     
     
     @app.post("/api/reset")

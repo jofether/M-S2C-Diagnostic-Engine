@@ -139,7 +139,15 @@ class MS2CRetriever:
         3. Multimodal Fused Scoring (CodeBERT + ViT)
         4. Additive Heuristic Matrix Application
         """
-        if self.global_embeddings is None or len(self.global_corpus) == 0: return [], 0.0
+        print(f"\n[MS2C] retrieve_top_k called:")
+        print(f"  corpus_size: {len(self.global_corpus)}")
+        print(f"  embeddings_available: {self.global_embeddings is not None}")
+        print(f"  query: {text_query[:50]}...")
+        print(f"  scope: {scope}")
+        
+        if self.global_embeddings is None or len(self.global_corpus) == 0:
+            print(f"  ❌ EARLY RETURN: No embeddings or corpus!")
+            return [], 0.0
 
         q_lower = text_query.lower()
         invalid_markers = ["<svg", "<path", "<g ", "<circle", "<rect", "<line", "<polygon"]
@@ -170,14 +178,20 @@ class MS2CRetriever:
                     elif len(word) > 3 and word.endswith('y'):
                         query_words_set.update([word[:-1], word[:-1] + 'ies'])
 
+            print(f"\n  [STAGE 1] Query tokens: {query_words_set}")
+
             # --- STAGE 2: DOCUMENT FILTRATION ---
             exact_match_files, partial_match_files = set(), set()
 
             if scope == "component":
-                if not target_key: return [], 0.0
+                print(f"  [STAGE 2] COMPONENT SCOPE - Looking for target_key: {target_key}")
+                if not target_key:
+                    print(f"  ❌ No target_key provided for component scope. Returning empty.")
+                    return [], 0.0
                 valid_indices = [i for i, item in enumerate(self.global_corpus) if
                                  item[0] == target_key and not any(m in item[1].lower() for m in invalid_markers)]
             else:
+                print(f"  [STAGE 2] REPOSITORY SCOPE - Filtering documents...")
                 file_sim = torch.matmul(text_emb, self.file_embeddings.T).squeeze(0)
                 for idx, filepath in enumerate(self.unique_files):
                     filename = os.path.basename(filepath).split('.')[0].lower()
@@ -190,10 +204,14 @@ class MS2CRetriever:
 
                 top_files = [self.unique_files[i] for i in
                              torch.topk(file_sim, min(5, len(self.unique_files))).indices.tolist()]
+                print(f"  [STAGE 2] Top files selected: {len(top_files)}")
                 valid_indices = [i for i, item in enumerate(self.global_corpus) if
                                  item[0] in top_files and not any(m in item[1].lower() for m in invalid_markers)]
+                print(f"  [STAGE 2] Valid indices after filtering: {len(valid_indices)}")
 
-            if not valid_indices: return [], 0.0
+            if not valid_indices:
+                print(f"  ❌ [STAGE 2] No valid indices! Returning empty.")
+                return [], 0.0
 
             # Extract Tags
             available_tags = {tag.group(1) for idx in valid_indices if
