@@ -1672,7 +1672,7 @@ function QueryState({
                   <label className={`text-xs font-semibold block mb-1 ${
                     darkMode ? 'text-slate-400' : 'text-slate-600'
                   }`}>
-                    🗂️ Target File
+                    🗂️ Target File (optional)
                   </label>
                   <select
                     value={targetFileHint}
