@@ -559,8 +559,8 @@ function App() {
         targetFile: targetFileHint,
         timestamp: new Date().toLocaleString(),
         conversationId: bugMessage.id,
-        resultCount: data.candidates ? data.candidates.length : 0,
-        candidates: data.candidates || [],
+        resultCount: data.results ? data.results.length : 0,
+        candidates: data.results || [],
         alphaWeights: {
           text: Math.round((data.alpha_text !== undefined ? data.alpha_text : 0.5) * 100),
           visual: Math.round((data.alpha_visual !== undefined ? data.alpha_visual : 0.5) * 100),
