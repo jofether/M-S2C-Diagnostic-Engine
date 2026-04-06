@@ -1,291 +1,121 @@
 {
-  "repo_url": "https://github.com/EdrianHernandez/Apex/tree/buggy",
-  "timestamp": "2026-04-06 03:19:25.926667",
-  "files_indexed": 7,
-  "snippets_indexed": 212,
+  "repo_url": "https://github.com/EdrianHernandez/Aura/tree/buggy",
+  "timestamp": "2026-04-06 11:23:53.235098",
+  "files_indexed": 9,
+  "snippets_indexed": 111,
   "index_dict": {
     "App.jsx": [
       {
         "file_path": "App.jsx",
+        "line_number": 11,
+        "code_snippet": "[1] (L:11) <main className=\"bg-black min-h-screen font-sans selection:bg-white selection:text-black text-white\">"
+      },
+      {
+        "file_path": "App.jsx",
         "line_number": 12,
-        "code_snippet": "[1] (L:12) <nav className=\"fixed top-0 w-full z-10 bg-white/80 backdrop-blur-md border-b border-zinc-100\">"
+        "code_snippet": "[2] (L:12) <Navbar />"
       },
       {
         "file_path": "App.jsx",
         "line_number": 13,
-        "code_snippet": "[2] (L:13) <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">"
+        "code_snippet": "[2] (L:13) <AgencyHero />"
       },
       {
         "file_path": "App.jsx",
         "line_number": 14,
-        "code_snippet": "[3] (L:14) <div className=\"flex justify-between items-center h-16\">"
+        "code_snippet": "[2] (L:14) <ClientLogos />"
       },
       {
         "file_path": "App.jsx",
         "line_number": 15,
-        "code_snippet": "[4] (L:15) <div className=\"flex-shrink-0 flex items-center gap-2 cursor-pointer\">"
+        "code_snippet": "[2] (L:15) <ServiceGrid />"
       },
       {
         "file_path": "App.jsx",
         "line_number": 16,
-        "code_snippet": "[5] (L:16) <div className=\"w-8 h-8 bg-black rounded-lg flex items-center justify-center\">"
+        "code_snippet": "[2] (L:16) <PortfolioShowcase />"
       },
       {
         "file_path": "App.jsx",
         "line_number": 17,
-        "code_snippet": "[6] (L:17) <div className=\"w-4 h-4 bg-white rounded-full\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 19,
-        "code_snippet": "[5] (L:19) <span className=\"font-bold text-xl tracking-tight\"> | [Text: Apex]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 22,
-        "code_snippet": "[4] (L:22) <div className=\"hidden md:flex space-x-8 items-center\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 23,
-        "code_snippet": "[5] (L:23) <a href=\"#features\" className=\"text-zinc-500 hover:text-zinc-900 transition-colors text-sm font-medium\"> | [Text: Features]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 24,
-        "code_snippet": "[5] (L:24) <a href=\"#testimonials\" className=\"text-zinc-500 hover:text-zinc-900 transition-colors text-sm font-medium\"> | [Text: Testimonials]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 25,
-        "code_snippet": "[5] (L:25) <button className=\"bg-black text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-zinc-800 transition-colors\"> | [Text: Get the App]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 30,
-        "code_snippet": "[4] (L:30) <div className=\"md:hidden flex items-center\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 31,
-        "code_snippet": "[5] (L:31) <button onClick={() => setIsOpen(!isOpen)} className=\"text-zinc-600 hover:text-black\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 32,
-        "code_snippet": "[6] (L:32) <X size={24} />"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 32,
-        "code_snippet": "[6] (L:32) <Menu size={24} />"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 39,
-        "code_snippet": "[2] (L:39) <div className=\"md:hidden bg-white border-b border-zinc-100 p-4 space-y-4\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 40,
-        "code_snippet": "[3] (L:40) <a href=\"#features\" className=\"block text-zinc-600 font-medium\" onClick={() => setIsOpen(false)}> | [Text: Features]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 41,
-        "code_snippet": "[3] (L:41) <a href=\"#testimonials\" className=\"block text-zinc-600 font-medium\" onClick={() => setIsOpen(false)}> | [Text: Testimonials]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 42,
-        "code_snippet": "[3] (L:42) <button className=\"w-full bg-black text-white py-3 rounded-xl font-medium\"> | [Text: Get the App]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 52,
-        "code_snippet": "[1] (L:52) <footer className=\"bg-zinc-50 border-t border-zinc-100 pt-16 pb-8\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 53,
-        "code_snippet": "[2] (L:53) <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 54,
-        "code_snippet": "[3] (L:54) <div className=\"flex items-center gap-2 mb-4\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 55,
-        "code_snippet": "[4] (L:55) <div className=\"w-6 h-6 bg-zinc-900 rounded-md flex items-center justify-center\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 56,
-        "code_snippet": "[5] (L:56) <div className=\"w-3 h-3 bg-white rounded-full\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 58,
-        "code_snippet": "[4] (L:58) <span className=\"font-bold text-lg tracking-tight\"> | [Text: Apex]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 60,
-        "code_snippet": "[3] (L:60) <p className=\"text-zinc-500 text-sm mb-8 text-center max-w-sm\"> | [Text: Designed for focus. Built for speed. The only productivity tool you'll ever need.]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 63,
-        "code_snippet": "[3] (L:63) <div className=\"flex gap-6 text-sm text-zinc-500\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 64,
-        "code_snippet": "[4] (L:64) <a href=\"#\" className=\"hover:text-zinc-900\"> | [Text: Privacy]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 65,
-        "code_snippet": "[4] (L:65) <a href=\"#\" className=\"hover:text-zinc-900\"> | [Text: Terms]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 66,
-        "code_snippet": "[4] (L:66) <a href=\"#\" className=\"hover:text-zinc-900\"> | [Text: Twitter]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 67,
-        "code_snippet": "[4] (L:67) <a href=\"#\" className=\"hover:text-zinc-900\"> | [Text: Instagram]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 69,
-        "code_snippet": "[3] (L:69) <p className=\"mt-8 text-xs text-zinc-400\"> | [Text: \u00a9 2024 Apex Inc. All rights reserved.]"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 76,
-        "code_snippet": "[1] (L:76) <div className=\"min-h-screen bg-white selection:bg-zinc-100 selection:text-black\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 77,
-        "code_snippet": "[2] (L:77) <Navbar />"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 78,
-        "code_snippet": "[2] (L:78) <main className=\"pt-16\">"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 79,
-        "code_snippet": "[3] (L:79) <AppHero />"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 80,
-        "code_snippet": "[3] (L:80) <FeatureBentoGrid />"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 81,
-        "code_snippet": "[3] (L:81) <UserTestimonials />"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 82,
-        "code_snippet": "[3] (L:82) <DownloadSection />"
-      },
-      {
-        "file_path": "App.jsx",
-        "line_number": 84,
-        "code_snippet": "[2] (L:84) <Footer />"
+        "code_snippet": "[2] (L:17) <Footer />"
       }
     ],
     "index.html": [
       {
         "file_path": "index.html",
-        "line_number": 2,
-        "code_snippet": "[1] (L:2) <html lang=\"en\">"
-      },
-      {
-        "file_path": "index.html",
         "line_number": 3,
-        "code_snippet": "[2] (L:3) <head>"
+        "code_snippet": "[1] (L:3) <html lang=\"en\">"
       },
       {
         "file_path": "index.html",
         "line_number": 4,
-        "code_snippet": "[3] (L:4) <meta charset=\"UTF-8\" />"
+        "code_snippet": "[2] (L:4) <head>"
       },
       {
         "file_path": "index.html",
         "line_number": 5,
-        "code_snippet": "[3] (L:5) <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />"
+        "code_snippet": "[3] (L:5) <meta charset=\"UTF-8\">"
       },
       {
         "file_path": "index.html",
         "line_number": 6,
-        "code_snippet": "[3] (L:6) <title> | [Text: Apex - Productivity Evolved]"
+        "code_snippet": "[4] (L:6) <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
       },
       {
         "file_path": "index.html",
         "line_number": 7,
-        "code_snippet": "[3] (L:7) <script src=\"https://cdn.tailwindcss.com\">"
+        "code_snippet": "[5] (L:7) <title> | [Text: Aura Creative | Design Agency]"
       },
       {
         "file_path": "index.html",
         "line_number": 8,
-        "code_snippet": "[3] (L:8) <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">"
+        "code_snippet": "[5] (L:8) <script src=\"https://cdn.tailwindcss.com\">"
       },
       {
         "file_path": "index.html",
         "line_number": 9,
-        "code_snippet": "[4] (L:9) <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>"
+        "code_snippet": "[5] (L:9) <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">"
       },
       {
         "file_path": "index.html",
         "line_number": 10,
-        "code_snippet": "[5] (L:10) <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap\" rel=\"stylesheet\">"
+        "code_snippet": "[6] (L:10) <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>"
       },
       {
         "file_path": "index.html",
         "line_number": 11,
-        "code_snippet": "[6] (L:11) <script> | [Text: tailwind.config =]"
+        "code_snippet": "[7] (L:11) <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap\" rel=\"stylesheet\">"
       },
       {
         "file_path": "index.html",
-        "line_number": 46,
-        "code_snippet": "[6] (L:46) <style> | [Text: html body /* Custom Scrollbar */ ::-webkit-scrollbar ::-webkit-scrollbar-track ::-webkit-scrollbar-thumb ::-webkit-scrollbar-thumb:hover /* Hide scrollbar for carousel */ .hide-scrollbar::-webkit-scrollbar .hide-scrollbar]"
+        "line_number": 12,
+        "code_snippet": "[8] (L:12) <style> | [Text: body .serif /* Custom Masonry Helper */ .masonry-item]"
       },
       {
         "file_path": "index.html",
-        "line_number": 78,
-        "code_snippet": "[6] (L:78) <script type=\"importmap\">"
+        "line_number": 28,
+        "code_snippet": "[8] (L:28) <script type=\"importmap\">"
       },
       {
         "file_path": "index.html",
-        "line_number": 88,
-        "code_snippet": "[6] (L:88) <link rel=\"stylesheet\" href=\"/index.css\">"
+        "line_number": 37,
+        "code_snippet": "[8] (L:37) <link rel=\"stylesheet\" href=\"/index.css\">"
       },
       {
         "file_path": "index.html",
-        "line_number": 90,
-        "code_snippet": "[6] (L:90) <body class=\"bg-white text-zinc-900\">"
+        "line_number": 39,
+        "code_snippet": "[8] (L:39) <body>"
       },
       {
         "file_path": "index.html",
-        "line_number": 91,
-        "code_snippet": "[7] (L:91) <div id=\"root\">"
+        "line_number": 40,
+        "code_snippet": "[9] (L:40) <div id=\"root\">"
       },
       {
         "file_path": "index.html",
-        "line_number": 92,
-        "code_snippet": "[7] (L:92) <script type=\"module\" src=\"/index.jsx\">"
+        "line_number": 41,
+        "code_snippet": "[9] (L:41) <script type=\"module\" src=\"/index.jsx\">"
       }
     ],
     "index.jsx": [
@@ -300,782 +130,451 @@
         "code_snippet": "[2] (L:13) <App />"
       }
     ],
-    "components/AppHero.jsx": [
+    "components/AgencyHero.jsx": [
       {
-        "file_path": "components/AppHero.jsx",
+        "file_path": "components/AgencyHero.jsx",
+        "line_number": 5,
+        "code_snippet": "[1] (L:5) <section className=\"relative min-h-screen flex flex-col justify-center px-6 md:px-12 lg:px-24 pt-20\">"
+      },
+      {
+        "file_path": "components/AgencyHero.jsx",
         "line_number": 6,
-        "code_snippet": "[1] (L:6) <section className=\"relative overflow-hidden pt-12 pb-20 lg:pt-32 lg:pb-32 bg-white\">"
+        "code_snippet": "[2] (L:6) <div className=\"max-w-7xl\">"
       },
       {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 9,
-        "code_snippet": "[2] (L:9) <div className=\"absolute inset-0 z-0 pointer-events-none\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 11,
-        "code_snippet": "[3] (L:11) <div className=\"absolute bottom-0 left-0 w-[300%] h-full flex animate-wave-slow opacity-60\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 13,
-        "code_snippet": "[4] (L:13) <svg className=\"w-1/3 h-[50vh] mt-auto text-zinc-50 fill-current transform translate-y-12\" viewBox=\"0 0 1440 320\" preserveAspectRatio=\"none\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 14,
-        "code_snippet": "[5] (L:14) <path d=\"M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,197.3C1248,213,1344,203,1392,197.3L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 17,
-        "code_snippet": "[4] (L:17) <svg className=\"w-1/3 h-[50vh] mt-auto text-zinc-50 fill-current transform translate-y-12\" viewBox=\"0 0 1440 320\" preserveAspectRatio=\"none\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 18,
-        "code_snippet": "[5] (L:18) <path d=\"M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,197.3C1248,213,1344,203,1392,197.3L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 21,
-        "code_snippet": "[4] (L:21) <svg className=\"w-1/3 h-[50vh] mt-auto text-zinc-50 fill-current transform translate-y-12\" viewBox=\"0 0 1440 320\" preserveAspectRatio=\"none\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 22,
-        "code_snippet": "[5] (L:22) <path d=\"M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,197.3C1248,213,1344,203,1392,197.3L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 27,
-        "code_snippet": "[3] (L:27) <div className=\"absolute bottom-0 left-0 w-[300%] h-full flex animate-wave opacity-40\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 29,
-        "code_snippet": "[4] (L:29) <svg className=\"w-1/3 h-[45vh] mt-auto text-blue-50/50 fill-current transform translate-y-4\" viewBox=\"0 0 1440 320\" preserveAspectRatio=\"none\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 30,
-        "code_snippet": "[5] (L:30) <path d=\"M0,64L48,80C96,96,192,128,288,128C384,128,480,96,576,106.7C672,117,768,171,864,197.3C960,224,1056,224,1152,202.7C1248,181,1344,139,1392,117.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 33,
-        "code_snippet": "[4] (L:33) <svg className=\"w-1/3 h-[45vh] mt-auto text-blue-50/50 fill-current transform translate-y-4\" viewBox=\"0 0 1440 320\" preserveAspectRatio=\"none\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 34,
-        "code_snippet": "[5] (L:34) <path d=\"M0,64L48,80C96,96,192,128,288,128C384,128,480,96,576,106.7C672,117,768,171,864,197.3C960,224,1056,224,1152,202.7C1248,181,1344,139,1392,117.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 37,
-        "code_snippet": "[4] (L:37) <svg className=\"w-1/3 h-[45vh] mt-auto text-blue-50/50 fill-current transform translate-y-4\" viewBox=\"0 0 1440 320\" preserveAspectRatio=\"none\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 38,
-        "code_snippet": "[5] (L:38) <path d=\"M0,64L48,80C96,96,192,128,288,128C384,128,480,96,576,106.7C672,117,768,171,864,197.3C960,224,1056,224,1152,202.7C1248,181,1344,139,1392,117.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 43,
-        "code_snippet": "[2] (L:43) <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 44,
-        "code_snippet": "[3] (L:44) <div className=\"grid lg:grid-cols-2 gap-12 lg:gap-8 items-center\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 47,
-        "code_snippet": "[4] (L:47) <div className=\"flex flex-col items-center lg:items-start text-center lg:text-left space-y-8\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 48,
-        "code_snippet": "[5] (L:48) <div className=\"inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-600 text-xs font-medium mb-2 animate-fade-in-up\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 49,
-        "code_snippet": "[6] (L:49) <span className=\"flex h-2 w-2 rounded-full bg-emerald-500\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 51,
-        "code_snippet": "[6] (L:51) <ChevronRight size={12} />"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 54,
-        "code_snippet": "[5] (L:54) <h1 className=\"text-2xl sm:text-2xl lg:text-2xl font-bold tracking-tight text-zinc-900 leading-[1.1]\"> | [Text: Master your]"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 55,
-        "code_snippet": "[6] (L:55) <br />"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 56,
-        "code_snippet": "[6] (L:56) <span className=\"text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 to-zinc-500\"> | [Text: digital life.]"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 61,
-        "code_snippet": "[5] (L:61) <p className=\"text-lg sm:text-xl text-zinc-500 max-w-lg leading-relaxed\"> | [Text: Experience clarity with the app designed to organize your thoughts, tasks, and time in one beautiful interface.]"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 65,
-        "code_snippet": "[5] (L:65) <div className=\"flex flex-col sm:flex-row gap-4 w-full sm:w-auto\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 66,
-        "code_snippet": "[6] (L:66) <button className=\"download-store-btn bg-black text-white hover:bg-zinc-800 transition-all px-6 py-3 rounded-2xl font-semibold flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:-translate-y-1 duration-300\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 67,
-        "code_snippet": "[7] (L:67) <svg className=\"w-8 h-8 fill-current\" viewBox=\"0 0 24 24\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 68,
-        "code_snippet": "[8] (L:68) <path d=\"M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.23-3.14-2.47-2.93-4.24-2.42-10.45 2.76-10.66 1.63-.07 2.82 1.09 3.71 1.09.89 0 2.45-1.35 4.14-1.15 2.18.09 3.83 1.48 4.3 1.76-2.42 1.18-2.02 6.83 2.15 8.16-.48 1.45-1.08 2.88-2.15 4.45-.66.97-1.35 1.94-2.16 1.32zM13 5.08c.7-.84 1.17-2.01 1.04-3.18-1.04.04-2.3.69-3.04 1.54-.66.75-1.24 1.95-1.1 3.1 1.15.09 2.33-.56 3.1-1.46z\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 70,
-        "code_snippet": "[7] (L:70) <div className=\"text-left leading-none\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 71,
-        "code_snippet": "[8] (L:71) <span className=\"block text-[10px] font-medium uppercase text-zinc-300\"> | [Text: Download on the]"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 72,
-        "code_snippet": "[8] (L:72) <span className=\"block text-xl font-bold\"> | [Text: App Store]"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 75,
-        "code_snippet": "[6] (L:75) <button className=\"download-store-btn bg-zinc-100 text-zinc-900 hover:bg-zinc-200 transition-all px-8 py-4 rounded-2xl font-semibold flex items-center justify-center gap-3\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 76,
-        "code_snippet": "[7] (L:76) <span> | [Text: View Demo]"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 77,
-        "code_snippet": "[7] (L:77) <ChevronRight size={20} />"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 81,
-        "code_snippet": "[5] (L:81) <div className=\"flex items-center gap-4 pt-4\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 82,
-        "code_snippet": "[6] (L:82) <div className=\"flex -space-x-3\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 84,
-        "code_snippet": "[7] (L:84-89) <img key={i} src={`https://picsum.photos/40/40?random=${i + 10}`} alt=\"User\" className=\"w-10 h-10 rounded-full border-2 border-white object-cover\" />"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 92,
-        "code_snippet": "[6] (L:92) <div className=\"flex flex-col items-start\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 93,
-        "code_snippet": "[7] (L:93) <div className=\"flex text-yellow-500\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 94,
-        "code_snippet": "[8] (L:94) <Star key={i} size={14} fill=\"currentColor\" />"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 96,
-        "code_snippet": "[7] (L:96) <span className=\"text-xs text-zinc-500 font-medium\"> | [Text: Loved by 10k+ users]"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 102,
-        "code_snippet": "[4] (L:102) <div className=\"relative flex justify-center lg:justify-end app-mockup-container\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 104,
-        "code_snippet": "[5] (L:104) <div className=\"absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-tr from-blue-100 to-purple-100 rounded-full blur-3xl opacity-50 -z-10 animate-pulse\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 107,
-        "code_snippet": "[5] (L:107) <div className=\"relative w-[300px] h-[600px] bg-zinc-900 rounded-[3rem] shadow-2xl border-[8px] border-zinc-900 ring-1 ring-zinc-900/5 z-20 overflow-hidden animate-float\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 109,
-        "code_snippet": "[6] (L:109) <div className=\"absolute top-0 w-full h-8 bg-zinc-900 z-5 flex justify-center\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 110,
-        "code_snippet": "[7] (L:110) <div className=\"w-24 h-6 bg-black rounded-b-xl\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 114,
-        "code_snippet": "[6] (L:114) <div className=\"w-full h-full bg-white flex flex-col pt-12 pb-8 px-4 relative overflow-hidden\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 115,
-        "code_snippet": "[7] (L:115-119) <img src=\"https://picsum.photos/300/600?grayscale\" alt=\"App Interface\" className=\"app-mockup-img absolute inset-0 w-full h-full object-cover opacity-90\" />"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 122,
-        "code_snippet": "[7] (L:122) <div className=\"absolute bottom-12 left-4 right-4 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/20 transform translate-y-4\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 123,
-        "code_snippet": "[8] (L:123) <div className=\"flex items-center gap-3\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 124,
-        "code_snippet": "[9] (L:124) <div className=\"w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white\">"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 125,
-        "code_snippet": "[10] (L:125) <Star size={20} fill=\"currentColor\" />"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 127,
-        "code_snippet": "[9] (L:127) <div>"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 128,
-        "code_snippet": "[10] (L:128) <p className=\"font-bold text-sm\"> | [Text: Goal Achieved]"
-      },
-      {
-        "file_path": "components/AppHero.jsx",
-        "line_number": 129,
-        "code_snippet": "[10] (L:129) <p className=\"text-xs text-gray-500\"> | [Text: Daily focus streak: 12 days]"
-      }
-    ],
-    "components/DownloadSection.jsx": [
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 6,
-        "code_snippet": "[1] (L:6) <section className=\"bg-zinc-900 py-24 relative overflow-hidden text-white\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 8,
-        "code_snippet": "[2] (L:8) <div className=\"absolute top-0 left-0 w-full h-full overflow-hidden z-0\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 9,
-        "code_snippet": "[3] (L:9) <div className=\"absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 10,
-        "code_snippet": "[3] (L:10) <div className=\"absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/4\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 13,
-        "code_snippet": "[2] (L:13) <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 14,
-        "code_snippet": "[3] (L:14) <div className=\"flex flex-col md:flex-row items-center justify-between gap-12 bg-white/5 backdrop-blur-lg rounded-[2.5rem] p-8 md:p-16 border border-white/10\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 16,
-        "code_snippet": "[4] (L:16) <div className=\"flex-1 text-center md:text-left\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 17,
-        "code_snippet": "[5] (L:17) <h2 className=\"text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-6\"> | [Text: Ready to upgrade]"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 18,
-        "code_snippet": "[6] (L:18) <br />"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 20,
-        "code_snippet": "[5] (L:20) <p className=\"text-zinc-400 text-lg mb-8 max-w-md mx-auto md:mx-0\"> | [Text: Download Apex today and experience the future of productivity. Free for the first 14 days.]"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 24,
-        "code_snippet": "[5] (L:24) <div className=\"flex flex-col sm:flex-row gap-4 justify-center md:justify-start\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 25,
-        "code_snippet": "[6] (L:25) <button className=\"download-store-btn bg-white text-black hover:bg-zinc-200 transition-colors px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 26,
-        "code_snippet": "[7] (L:26) <svg className=\"w-8 h-8 fill-current\" viewBox=\"0 0 24 24\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 27,
-        "code_snippet": "[8] (L:27) <path d=\"M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.23-3.14-2.47-2.93-4.24-2.42-10.45 2.76-10.66 1.63-.07 2.82 1.09 3.71 1.09.89 0 2.45-1.35 4.14-1.15 2.18.09 3.83 1.48 4.3 1.76-2.42 1.18-2.02 6.83 2.15 8.16-.48 1.45-1.08 2.88-2.15 4.45-.66.97-1.35 1.94-2.16 1.32zM13 5.08c.7-.84 1.17-2.01 1.04-3.18-1.04.04-2.3.69-3.04 1.54-.66.75-1.24 1.95-1.1 3.1 1.15.09 2.33-.56 3.1-1.46z\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 29,
-        "code_snippet": "[7] (L:29) <div className=\"text-left leading-none\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 30,
-        "code_snippet": "[8] (L:30) <span className=\"block text-[10px] font-medium uppercase\"> | [Text: Download on the]"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 31,
-        "code_snippet": "[8] (L:31) <span className=\"block text-sm font-bold\"> | [Text: App Store]"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 35,
-        "code_snippet": "[6] (L:35) <button className=\"download-store-btn bg-transparent border border-white/20 hover:bg-white/10 transition-colors px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 text-white\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 36,
-        "code_snippet": "[7] (L:36) <svg className=\"w-8 h-8 fill-current\" viewBox=\"0 0 24 24\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 37,
-        "code_snippet": "[8] (L:37) <path d=\"M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.92 20.16,13.19L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z\" />"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 39,
-        "code_snippet": "[7] (L:39) <div className=\"text-left leading-none\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 40,
-        "code_snippet": "[8] (L:40) <span className=\"block text-[10px] font-medium uppercase\"> | [Text: Get it on]"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 41,
-        "code_snippet": "[8] (L:41) <span className=\"block text-sm font-bold\"> | [Text: Google Play]"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 47,
-        "code_snippet": "[4] (L:47) <div className=\"hidden md:block absolute bottom-0 right-0\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 48,
-        "code_snippet": "[5] (L:48) <div className=\"bg-white p-4 rounded-2xl shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-300\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 49,
-        "code_snippet": "[6] (L:49) <div className=\"w-40 h-40 bg-zinc-100 rounded-xl flex flex-col items-center justify-center text-zinc-900\">"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 50,
-        "code_snippet": "[7] (L:50) <QrCode size={80} className=\"mb-2 opacity-80\" />"
-      },
-      {
-        "file_path": "components/DownloadSection.jsx",
-        "line_number": 51,
-        "code_snippet": "[7] (L:51) <span className=\"text-xs font-bold tracking-widest uppercase\"> | [Text: Scan to get]"
-      }
-    ],
-    "components/FeatureBentoGrid.jsx": [
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 6,
-        "code_snippet": "[1] (L:6) <section id=\"features\" className=\"py-24 bg-zinc-50 scroll-mt-24\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
+        "file_path": "components/AgencyHero.jsx",
         "line_number": 7,
-        "code_snippet": "[2] (L:7) <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">"
+        "code_snippet": "[3] (L:7) <h2 className=\"text-zinc-500 text-sm md:text-base uppercase tracking-[0.3em] font-semibold mb-8 animate-fade-in\"> | [Text: Independent Design Studio]"
       },
       {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 8,
-        "code_snippet": "[3] (L:8) <div className=\"text-center max-w-3xl mx-auto mb-0\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 9,
-        "code_snippet": "[4] (L:9) <h2 className=\"text-sm font-bold tracking-widest text-blue-600 uppercase mb-3\"> | [Text: Capabilities]"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
+        "file_path": "components/AgencyHero.jsx",
         "line_number": 10,
-        "code_snippet": "[4] (L:10) <h3 className=\"text-3xl md:text-4xl font-bold text-zinc-900 tracking-tight\"> | [Text: Everything you need.]"
+        "code_snippet": "[3] (L:10) <h1 className=\"agency-title serif text-5xl md:text-8xl lg:text-[10rem] leading-[0.9] font-medium tracking-tight mb-12\"> | [Text: We Craft]"
       },
       {
-        "file_path": "components/FeatureBentoGrid.jsx",
+        "file_path": "components/AgencyHero.jsx",
         "line_number": 11,
-        "code_snippet": "[5] (L:11) <br />"
+        "code_snippet": "[4] (L:11) <br />"
       },
       {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 13,
-        "code_snippet": "[4] (L:13) <p className=\"mt-4 text-zinc-500 text-lg\"> | [Text: Built with a focus on simplicity, speed, and reliability. Apex adapts to your workflow, not the other way around.]"
+        "file_path": "components/AgencyHero.jsx",
+        "line_number": 12,
+        "code_snippet": "[4] (L:12) <span className=\"italic\"> | [Text: Digital]"
       },
       {
-        "file_path": "components/FeatureBentoGrid.jsx",
+        "file_path": "components/AgencyHero.jsx",
+        "line_number": 14,
+        "code_snippet": "[3] (L:14) <div className=\"flex flex-col md:flex-row md:items-center gap-12 mt-4\">"
+      },
+      {
+        "file_path": "components/AgencyHero.jsx",
+        "line_number": 15,
+        "code_snippet": "[4] (L:15-18) <button className=\"group relative inline-flex items-center justify-center px-2 py-1 bg-white text-black font-semibold text-lg overflow-hidden transition-all duration-300 hover:pr-14\" onClick={() => document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' })} >"
+      },
+      {
+        "file_path": "components/AgencyHero.jsx",
         "line_number": 19,
-        "code_snippet": "[3] (L:19) <div className=\"grid grid-cols-1 md:grid-cols-3 md:grid-rows-3 gap-6 auto-rows-[minmax(180px,auto)]\">"
+        "code_snippet": "[5] (L:19) <span className=\"relative z-10 uppercase tracking-wider\"> | [Text: View Work]"
       },
       {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 22,
-        "code_snippet": "[4] (L:22) <div className=\"bento-feature-card group col-span-1 md:col-span-2 md:row-span-2 bg-white rounded-3xl p-2 border border-zinc-100 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden\">"
+        "file_path": "components/AgencyHero.jsx",
+        "line_number": 20,
+        "code_snippet": "[5] (L:20-25) <svg className=\"absolute right-4 w-6 h-6 opacity-0 group-hover:opacity-100 transition-all duration-300\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\" >"
       },
       {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 23,
-        "code_snippet": "[5] (L:23) <div className=\"relative z-10 h-full flex flex-col justify-between\">"
+        "file_path": "components/AgencyHero.jsx",
+        "line_number": 26,
+        "code_snippet": "[6] (L:26) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M17 8l4 4m0 0l-4 4m4-4H3\" />"
       },
       {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 24,
-        "code_snippet": "[6] (L:24) <div className=\"w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 transition-transform\">"
+        "file_path": "components/AgencyHero.jsx",
+        "line_number": 30,
+        "code_snippet": "[4] (L:30) <p className=\"max-w-xs text-zinc-400 text-lg leading-relaxed font-light\"> | [Text: Pushing the boundaries of visual identity and digital experiences through purposeful design.]"
       },
       {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 25,
-        "code_snippet": "[7] (L:25) <Cloud size={24} />"
+        "file_path": "components/AgencyHero.jsx",
+        "line_number": 37,
+        "code_snippet": "[2] (L:37) <div className=\"absolute bottom-12 right-12 hidden lg:block z-0\">"
       },
       {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 27,
-        "code_snippet": "[6] (L:27) <div>"
+        "file_path": "components/AgencyHero.jsx",
+        "line_number": 38,
+        "code_snippet": "[3] (L:38) <div className=\"animate-bounce\">"
       },
       {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 28,
-        "code_snippet": "[7] (L:28) <h4 className=\"text-2xl font-bold text-zinc-900 mb-2\"> | [Text: Instant Cloud Sync]"
+        "file_path": "components/AgencyHero.jsx",
+        "line_number": 39,
+        "code_snippet": "[4] (L:39) <svg className=\"w-8 h-8 text-zinc-600\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">"
       },
       {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 29,
-        "code_snippet": "[7] (L:29) <p className=\"text-zinc-500\"> | [Text: Start on your phone, finish on your tablet. Changes reflect instantly across all your connected devices with end-to-end encryption.]"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 32,
-        "code_snippet": "[5] (L:32) <div className=\"absolute right-0 bottom-0 w-64 h-64 bg-gradient-to-tl from-blue-50 to-transparent rounded-tl-[100px] opacity-50\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 34,
-        "code_snippet": "[5] (L:34) <div className=\"absolute right-8 top-8 opacity-20\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 35,
-        "code_snippet": "[6] (L:35) <Cloud size={120} />"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
+        "file_path": "components/AgencyHero.jsx",
         "line_number": 40,
-        "code_snippet": "[4] (L:40) <div className=\"bento-feature-card group col-span-1 md:row-span-2 bg-black text-white rounded-3xl p-8 shadow-xl hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 41,
-        "code_snippet": "[5] (L:41) <div className=\"relative z-1 h-full\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 42,
-        "code_snippet": "[6] (L:42) <div className=\"w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center text-white mb-6\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 43,
-        "code_snippet": "[7] (L:43) <Smartphone size={24} />"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 45,
-        "code_snippet": "[6] (L:45) <div className=\"mt-auto\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 46,
-        "code_snippet": "[7] (L:46) <h4 className=\"text-2xl font-bold mb-2\"> | [Text: Mobile First]"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 47,
-        "code_snippet": "[7] (L:47) <p className=\"text-zinc-400\"> | [Text: Designed for the thumb zone. Every interaction is fluid, natural, and specifically crafted for touch screens.]"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 50,
-        "code_snippet": "[5] (L:50) <div className=\"absolute -right-10 -bottom-10 w-40 h-40 border-[20px] border-zinc-800 rounded-full opacity-50\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 54,
-        "code_snippet": "[4] (L:54) <div className=\"bento-feature-card group bg-white rounded-3xl p-6 border border-zinc-100 shadow-sm hover:shadow-md transition-all\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 55,
-        "code_snippet": "[5] (L:55) <div className=\"w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-500 mb-4\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 56,
-        "code_snippet": "[6] (L:56) <WifiOff size={20} />"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 58,
-        "code_snippet": "[5] (L:58) <h4 className=\"text-lg font-bold text-zinc-900 mb-1\"> | [Text: Offline Mode]"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 59,
-        "code_snippet": "[5] (L:59) <p className=\"text-sm text-zinc-500\"> | [Text: No internet? No problem. Full functionality without a connection.]"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 63,
-        "code_snippet": "[4] (L:63) <div className=\"bento-feature-card group bg-white rounded-3xl p-6 border border-zinc-100 shadow-sm hover:shadow-md transition-all\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 64,
-        "code_snippet": "[5] (L:64) <div className=\"w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600 mb-4\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 65,
-        "code_snippet": "[6] (L:65) <ShieldCheck size={20} />"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 67,
-        "code_snippet": "[5] (L:67) <h4 className=\"text-lg font-bold text-zinc-900 mb-1\"> | [Text: Bank-Grade Security]"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 68,
-        "code_snippet": "[5] (L:68) <p className=\"text-sm text-zinc-500\"> | [Text: Your data is yours. Encrypted at rest and in transit.]"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 72,
-        "code_snippet": "[4] (L:72) <div className=\"bento-feature-card group md:col-span-1 bg-white rounded-3xl p-6 border border-zinc-100 shadow-sm hover:shadow-md transition-all\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 73,
-        "code_snippet": "[5] (L:73) <div className=\"w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 mb-4\">"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 74,
-        "code_snippet": "[6] (L:74) <Zap size={20} />"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 76,
-        "code_snippet": "[5] (L:76) <h4 className=\"text-lg font-bold text-zinc-900 mb-1\"> | [Text: Lightning Fast]"
-      },
-      {
-        "file_path": "components/FeatureBentoGrid.jsx",
-        "line_number": 77,
-        "code_snippet": "[5] (L:77) <p className=\"text-sm text-zinc-500\"> | [Text: Optimized specifically for performance on iOS and Android silicon.]"
+        "code_snippet": "[5] (L:40) <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={1} d=\"M19 14l-7 7m0 0l-7-7m7 7V3\" />"
       }
     ],
-    "components/UserTestimonials.jsx": [
+    "components/ClientLogos.jsx": [
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 59,
-        "code_snippet": "[1] (L:59) <section id=\"testimonials\" className=\"py-24 bg-white border-t border-zinc-100 scroll-mt-24\">"
+        "file_path": "components/ClientLogos.jsx",
+        "line_number": 9,
+        "code_snippet": "[1] (L:9) <section className=\"py-24 px-6 md:px-12 lg:px-24 border-t border-zinc-900 bg-black\">"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 60,
-        "code_snippet": "[2] (L:60) <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">"
+        "file_path": "components/ClientLogos.jsx",
+        "line_number": 10,
+        "code_snippet": "[2] (L:10) <div className=\"max-w-6xl mx-auto\">"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 61,
-        "code_snippet": "[3] (L:61) <div className=\"flex flex-col-reverse md:flex-row justify-between items-start mb-12 gap-6\">"
+        "file_path": "components/ClientLogos.jsx",
+        "line_number": 11,
+        "code_snippet": "[3] (L:11) <h6 className=\"text-center text-zinc-500 uppercase tracking-[0.5em] text-xs font-bold mb-16\"> | [Text: Collaborated With]"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 62,
-        "code_snippet": "[4] (L:62) <div className=\"text-center md:text-left\">"
+        "file_path": "components/ClientLogos.jsx",
+        "line_number": 14,
+        "code_snippet": "[3] (L:14) <div className=\"grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-0 items-center opacity-40 hover:opacity-100 transition-opacity duration-700\">"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 63,
-        "code_snippet": "[5] (L:63) <h2 className=\"text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl\"> | [Text: Loved by thousands of creators]"
+        "file_path": "components/ClientLogos.jsx",
+        "line_number": 16,
+        "code_snippet": "[4] (L:16) <div key={client} className=\"flex justify-center group\">"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 66,
-        "code_snippet": "[5] (L:66) <p className=\"mt-4 text-lg text-zinc-500 max-w-2xl\"> | [Text: Join the community of people who have reclaimed their time.]"
+        "file_path": "components/ClientLogos.jsx",
+        "line_number": 17,
+        "code_snippet": "[5] (L:17) <span className=\"text-2xl font-bold tracking-tighter text-zinc-400 group-hover:text-white transition-colors cursor-default\">"
+      }
+    ],
+    "components/Footer.jsx": [
+      {
+        "file_path": "components/Footer.jsx",
+        "line_number": 5,
+        "code_snippet": "[1] (L:5) <footer className=\"bg-zinc-950 pt-32 pb-12 px-6 md:px-12 lg:px-24\">"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 71,
-        "code_snippet": "[4] (L:71) <div className=\"flex items-center gap-2\">"
+        "file_path": "components/Footer.jsx",
+        "line_number": 6,
+        "code_snippet": "[2] (L:6) <div className=\"max-w-7xl mx-auto\">"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 72,
-        "code_snippet": "[5] (L:72-76) <button onClick={() => scroll('left')} className=\"p-3 rounded-full border border-zinc-200 text-zinc-600 hover:bg-zinc-100 hover:text-black transition-colors\" aria-label=\"Scroll left\" >"
+        "file_path": "components/Footer.jsx",
+        "line_number": 7,
+        "code_snippet": "[3] (L:7) <div className=\"grid grid-cols-1 lg:grid-cols-4 gap-2 mb-32\">"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 77,
-        "code_snippet": "[6] (L:77) <ChevronLeft size={20} />"
+        "file_path": "components/Footer.jsx",
+        "line_number": 8,
+        "code_snippet": "[4] (L:8) <div>"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 79,
-        "code_snippet": "[5] (L:79-83) <button onClick={() => scroll('right')} className=\"p-3 rounded-full border border-zinc-200 text-zinc-600 hover:bg-zinc-100 hover:text-black transition-colors\" aria-label=\"Scroll right\" >"
+        "file_path": "components/Footer.jsx",
+        "line_number": 9,
+        "code_snippet": "[5] (L:9) <h2 className=\"serif text-4xl md:text-6xl font-medium mb-12 leading-tight\"> | [Text: Have a project]"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 84,
-        "code_snippet": "[6] (L:84) <ChevronRight size={20} />"
+        "file_path": "components/Footer.jsx",
+        "line_number": 10,
+        "code_snippet": "[6] (L:10) <br />"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 90,
-        "code_snippet": "[3] (L:90-93) <div ref={scrollContainerRef} className=\"flex overflow-hidden snap-x snap-mandatory gap-6 pb-8 hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0\" >"
+        "file_path": "components/Footer.jsx",
+        "line_number": 11,
+        "code_snippet": "[6] (L:11) <span className=\"italic underline decoration-1 underline-offset-8\"> | [Text: Let's talk.]"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 95,
-        "code_snippet": "[4] (L:95-98) <div key={t.id} className=\"snap-center flex-shrink-0 w-[400px] md:w-[400px] bg-zinc-50 rounded-2xl p-8 border border-zinc-100 hover:shadow-lg transition-shadow duration-300 opacity-30\" >"
+        "file_path": "components/Footer.jsx",
+        "line_number": 13,
+        "code_snippet": "[5] (L:13) <a href=\"mailto:hello@auracreative.studio\" className=\"text-2xl md:text-3xl font-light text-zinc-400 hover:text-white transition-colors\"> | [Text: hello@auracreative.studio]"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 99,
-        "code_snippet": "[5] (L:99) <div className=\"flex gap-1 mb-4 text-yellow-500\">"
+        "file_path": "components/Footer.jsx",
+        "line_number": 18,
+        "code_snippet": "[4] (L:18) <div className=\"grid grid-cols-2 gap-12\">"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 101,
-        "code_snippet": "[6] (L:101) <Star key={i} size={16} fill=\"currentColor\" />"
+        "file_path": "components/Footer.jsx",
+        "line_number": 19,
+        "code_snippet": "[5] (L:19) <div>"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 105,
-        "code_snippet": "[5] (L:105) <blockquote className=\"text-zinc-800 text-lg font-medium leading-relaxed mb-6 h-32 overflow-hidden relative\"> | [Text: \"\"]"
+        "file_path": "components/Footer.jsx",
+        "line_number": 20,
+        "code_snippet": "[6] (L:20) <h6 className=\"text-xs uppercase tracking-widest font-bold mb-6 text-zinc-600\"> | [Text: Connect]"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 109,
-        "code_snippet": "[5] (L:109) <div className=\"flex items-center gap-4\">"
+        "file_path": "components/Footer.jsx",
+        "line_number": 21,
+        "code_snippet": "[6] (L:21) <ul className=\"space-y-4 text-zinc-400 font-light\">"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 110,
-        "code_snippet": "[6] (L:110-114) <img src={t.image} alt={t.name} className=\"w-12 h-12 rounded-full object-cover border-2 border-white\" />"
+        "file_path": "components/Footer.jsx",
+        "line_number": 22,
+        "code_snippet": "[7] (L:22) <li>"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 115,
-        "code_snippet": "[6] (L:115) <div>"
+        "file_path": "components/Footer.jsx",
+        "line_number": 22,
+        "code_snippet": "[8] (L:22) <a href=\"#\" className=\"hover:text-white transition-colors\"> | [Text: Instagram]"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 116,
-        "code_snippet": "[7] (L:116) <div className=\"font-bold text-zinc-900 text-sm\">"
+        "file_path": "components/Footer.jsx",
+        "line_number": 23,
+        "code_snippet": "[7] (L:23) <li>"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 117,
-        "code_snippet": "[7] (L:117) <div className=\"text-zinc-500 text-xs\">"
+        "file_path": "components/Footer.jsx",
+        "line_number": 23,
+        "code_snippet": "[8] (L:23) <a href=\"#\" className=\"hover:text-white transition-colors\"> | [Text: Behance]"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 125,
-        "code_snippet": "[3] (L:125) <div className=\"mt-12 pt-10 border-t border-zinc-100\">"
+        "file_path": "components/Footer.jsx",
+        "line_number": 24,
+        "code_snippet": "[7] (L:24) <li>"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 126,
-        "code_snippet": "[4] (L:126) <p className=\"text-center text-zinc-400 text-sm font-medium uppercase tracking-widest mb-8\"> | [Text: Featured In]"
+        "file_path": "components/Footer.jsx",
+        "line_number": 24,
+        "code_snippet": "[8] (L:24) <a href=\"#\" className=\"hover:text-white transition-colors\"> | [Text: LinkedIn]"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 127,
-        "code_snippet": "[4] (L:127) <div className=\"flex flex-wrap justify-center gap-12 opacity-40 grayscale\">"
+        "file_path": "components/Footer.jsx",
+        "line_number": 25,
+        "code_snippet": "[7] (L:25) <li>"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 128,
-        "code_snippet": "[5] (L:128) <span className=\"text-xl font-bold font-serif\"> | [Text: TechCrunch]"
+        "file_path": "components/Footer.jsx",
+        "line_number": 25,
+        "code_snippet": "[8] (L:25) <a href=\"#\" className=\"hover:text-white transition-colors\"> | [Text: Twitter]"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 129,
-        "code_snippet": "[5] (L:129) <span className=\"text-xl font-bold font-sans tracking-tighter\"> | [Text: TheVerge]"
+        "file_path": "components/Footer.jsx",
+        "line_number": 28,
+        "code_snippet": "[5] (L:28) <div>"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 130,
-        "code_snippet": "[5] (L:130) <span className=\"text-xl font-bold font-mono\"> | [Text: WIRED]"
+        "file_path": "components/Footer.jsx",
+        "line_number": 29,
+        "code_snippet": "[6] (L:29) <h6 className=\"text-xs uppercase tracking-widest font-bold mb-6 text-zinc-600\"> | [Text: Studio]"
       },
       {
-        "file_path": "components/UserTestimonials.jsx",
-        "line_number": 131,
-        "code_snippet": "[5] (L:131) <span className=\"text-xl font-bold font-sans italic\"> | [Text: FastCompany]"
+        "file_path": "components/Footer.jsx",
+        "line_number": 30,
+        "code_snippet": "[6] (L:30) <p className=\"text-zinc-400 font-light leading-relaxed\"> | [Text: Aura Creative Studio]"
+      },
+      {
+        "file_path": "components/Footer.jsx",
+        "line_number": 31,
+        "code_snippet": "[7] (L:31) <br />"
+      },
+      {
+        "file_path": "components/Footer.jsx",
+        "line_number": 32,
+        "code_snippet": "[7] (L:32) <br />"
+      },
+      {
+        "file_path": "components/Footer.jsx",
+        "line_number": 39,
+        "code_snippet": "[3] (L:39) <div className=\"pt-12 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-6\">"
+      },
+      {
+        "file_path": "components/Footer.jsx",
+        "line_number": 40,
+        "code_snippet": "[4] (L:40) <div className=\"text-xs text-zinc-600 uppercase tracking-widest\"> | [Text: \u00a9 2024 Aura Creative Studio. All Rights Reserved.]"
+      },
+      {
+        "file_path": "components/Footer.jsx",
+        "line_number": 43,
+        "code_snippet": "[4] (L:43) <div className=\"text-xs text-zinc-600 uppercase tracking-widest flex gap-8\">"
+      },
+      {
+        "file_path": "components/Footer.jsx",
+        "line_number": 44,
+        "code_snippet": "[5] (L:44) <a href=\"#\" className=\"hover:text-white\"> | [Text: Privacy Policy]"
+      },
+      {
+        "file_path": "components/Footer.jsx",
+        "line_number": 45,
+        "code_snippet": "[5] (L:45) <a href=\"#\" className=\"hover:text-white\"> | [Text: Terms of Service]"
+      }
+    ],
+    "components/Navbar.jsx": [
+      {
+        "file_path": "components/Navbar.jsx",
+        "line_number": 5,
+        "code_snippet": "[1] (L:5) <nav className=\"fixed top-0 left-0 w-full z-50 mix-blend-difference px-6 py-8 md:px-12 lg:px-24\">"
+      },
+      {
+        "file_path": "components/Navbar.jsx",
+        "line_number": 6,
+        "code_snippet": "[2] (L:6) <div className=\"max-w-7xl mx-auto flex flex-col justify-between items-end\">"
+      },
+      {
+        "file_path": "components/Navbar.jsx",
+        "line_number": 7,
+        "code_snippet": "[3] (L:7) <h1 className=\"text-zinc-900 text-2xl font-bold tracking-tighter\"> | [Text: AURA]"
+      },
+      {
+        "file_path": "components/Navbar.jsx",
+        "line_number": 8,
+        "code_snippet": "[3] (L:8) <div className=\"flex gap-8 text-zinc-900 text-sm font-medium\">"
+      },
+      {
+        "file_path": "components/Navbar.jsx",
+        "line_number": 9,
+        "code_snippet": "[4] (L:9) <a href=\"#\" className=\"hover:text-white transition-colors\"> | [Text: Work]"
+      },
+      {
+        "file_path": "components/Navbar.jsx",
+        "line_number": 10,
+        "code_snippet": "[4] (L:10) <a href=\"#\" className=\"hover:text-white transition-colors\"> | [Text: Services]"
+      },
+      {
+        "file_path": "components/Navbar.jsx",
+        "line_number": 11,
+        "code_snippet": "[4] (L:11) <a href=\"#\" className=\"hover:text-white transition-colors\"> | [Text: Contact]"
+      }
+    ],
+    "components/PortfolioShowcase.jsx": [
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 14,
+        "code_snippet": "[1] (L:14) <section id=\"work\" className=\"py-24 px-6 md:px-12 lg:px-24\">"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 15,
+        "code_snippet": "[2] (L:15) <div className=\"mb-20\">"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 16,
+        "code_snippet": "[3] (L:16) <h3 className=\"serif text-5xl md:text-7xl font-medium mb-6\"> | [Text: Selected Work]"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 17,
+        "code_snippet": "[3] (L:17) <div className=\"w-20 h-1 bg-white\">"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 20,
+        "code_snippet": "[2] (L:20) <div className=\"columns-1 md:columns-2 lg:columns-3 gap-8 space-y-8\">"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 22,
+        "code_snippet": "[3] (L:22) <div key={item.id} className=\"masonry-item group relative overflow-hidden cursor-pointer\">"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 23,
+        "code_snippet": "[4] (L:23) <div className=\"relative overflow-hidden bg-zinc-900\">"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 24,
+        "code_snippet": "[5] (L:24-29) <img src={item.imageUrl} alt={item.title} className=\"w-full object-cover grayscale hover:grayscale-0 transition-all duration-1000 ease-out transform group-hover:scale-110\" loading=\"lazy\" />"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 30,
+        "code_snippet": "[5] (L:30) <div className=\"absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center z-0\">"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 31,
+        "code_snippet": "[6] (L:31) <div className=\"text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 -z-10\">"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 32,
+        "code_snippet": "[7] (L:32) <span className=\"inline-block px-4 py-2 border border-white text-xs uppercase tracking-widest font-bold\"> | [Text: View Case Study]"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 36,
+        "code_snippet": "[4] (L:36) <div className=\"mt-4 flex justify-between items-baseline\">"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 37,
+        "code_snippet": "[5] (L:37) <h5 className=\"text-xs font-medium tracking-tight\">"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 38,
+        "code_snippet": "[5] (L:38) <span className=\"text-xs uppercase tracking-widest text-zinc-900 font-mono\">"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 44,
+        "code_snippet": "[2] (L:44) <div className=\"mt-20 text-center\">"
+      },
+      {
+        "file_path": "components/PortfolioShowcase.jsx",
+        "line_number": 45,
+        "code_snippet": "[3] (L:45) <button className=\"px-12 py-5 border border-zinc-700 hover:border-white transition-colors uppercase tracking-[0.2em] text-sm font-bold\"> | [Text: Archive 2020\u20142024]"
+      }
+    ],
+    "components/ServiceGrid.jsx": [
+      {
+        "file_path": "components/ServiceGrid.jsx",
+        "line_number": 26,
+        "code_snippet": "[1] (L:26) <section id=\"services\" className=\"py-24 px-6 md:px-12 lg:px-24 bg-zinc-950/50\">"
+      },
+      {
+        "file_path": "components/ServiceGrid.jsx",
+        "line_number": 27,
+        "code_snippet": "[2] (L:27) <div className=\"flex flex-col md:flex-row justify-between items-end mb-20 gap-8\">"
+      },
+      {
+        "file_path": "components/ServiceGrid.jsx",
+        "line_number": 28,
+        "code_snippet": "[3] (L:28) <h3 className=\"serif text-4xl md:text-6xl font-medium\"> | [Text: Core Capabilities]"
+      },
+      {
+        "file_path": "components/ServiceGrid.jsx",
+        "line_number": 29,
+        "code_snippet": "[3] (L:29) <p className=\"max-w-md text-zinc-500 text-lg\"> | [Text: Specialized expertise tailored for companies looking to disrupt their industry through high-end design.]"
+      },
+      {
+        "file_path": "components/ServiceGrid.jsx",
+        "line_number": 34,
+        "code_snippet": "[2] (L:34) <div className=\"grid grid-cols-1 md:grid-cols-3 gap-1px bg-zinc-800\">"
+      },
+      {
+        "file_path": "components/ServiceGrid.jsx",
+        "line_number": 36,
+        "code_snippet": "[3] (L:36-39) <div key={service.id} className=\"service-card group bg-black p-0 lg:p-0 flex flex-col transition-all duration-500 hover:bg-zinc-900\" >"
+      },
+      {
+        "file_path": "components/ServiceGrid.jsx",
+        "line_number": 40,
+        "code_snippet": "[4] (L:40) <span className=\"text-zinc-600 text-sm font-mono mb-8\">"
+      },
+      {
+        "file_path": "components/ServiceGrid.jsx",
+        "line_number": 41,
+        "code_snippet": "[4] (L:41) <div className=\"text-4xl mb-6 group-hover:scale-110 transition-transform duration-500 origin-left opacity-0\">"
+      },
+      {
+        "file_path": "components/ServiceGrid.jsx",
+        "line_number": 44,
+        "code_snippet": "[4] (L:44) <h4 className=\"text-2xl font-semibold mb-4\">"
+      },
+      {
+        "file_path": "components/ServiceGrid.jsx",
+        "line_number": 45,
+        "code_snippet": "[4] (L:45) <p className=\"text-zinc-500 leading-relaxed font-light group-hover:text-zinc-300 transition-colors\">"
+      },
+      {
+        "file_path": "components/ServiceGrid.jsx",
+        "line_number": 48,
+        "code_snippet": "[4] (L:48) <div className=\"mt-12 flex items-center text-xs uppercase tracking-widest font-bold opacity-0 group-hover:opacity-100 transition-opacity\"> | [Text: Explore service]"
+      },
+      {
+        "file_path": "components/ServiceGrid.jsx",
+        "line_number": 50,
+        "code_snippet": "[5] (L:50) <span className=\"ml-2 transform translate-x-0 group-hover:translate-x-2 transition-transform\"> | [Text: \u2192]"
       }
     ]
   }

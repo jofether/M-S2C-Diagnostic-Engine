@@ -57,24 +57,7 @@ class MS2CRetriever:
         "had", "a", "an", "in", "on", "at", "to", "by", "is", "be", "as", "or"
     }
     
-    # Semantic mapping: UX/generic terms → HTML technical tags (Phase 1 enhancement)
-    # ⚠️  CRITICAL: Tag names must NOT have angle brackets (regex extracts tags without them)
-    # Phase 4 Tier 1 regex extracts: tag = tag_match.group(1)  # e.g., "a", "button", not "<a", "<button"
-    SEMANTIC_MAPPING = {
-        "link": ["a", "href"],
-        "button": ["button", "input"],
-        "form": ["form", "input", "textarea"],
-        "input": ["input", "textarea"],
-        "dropdown": ["select", "option"],
-        "menu": ["nav", "ul", "li"],
-        "header": ["header", "h1", "h2"],
-        "footer": ["footer"],
-        "image": ["img"],
-        "card": ["div", "card"],
-        "text": ["p", "span", "div"],
-        "click": ["button", "onclick"],
-        "submit": ["button", "type", "submit"],
-    }
+
     
     def __init__(self, model_name: str = "microsoft/codebert-base"):
         """Initialize the retriever with CodeBERT and ViT models."""
@@ -207,10 +190,6 @@ class MS2CRetriever:
                     query_words_set.update([word[:-1], word[:-2]])
                 elif len(word) > 3 and word.endswith('s') and not word.endswith('ss'):
                     query_words_set.add(word[:-1])
-                
-                # Phase 1 Enhancement: Semantic mapping (UX terms → technical tags)
-                if word in self.SEMANTIC_MAPPING:
-                    query_words_set.update(self.SEMANTIC_MAPPING[word])
         
         return query_words_set
     
