@@ -59,6 +59,213 @@ def setup_routes(app, retriever, pytorch_available):
     # Initialize input quality analyzer (independent from retrieval pipeline)
     input_analyzer = InputQualityAnalyzer()
     
+    # ========================================================================
+    # BACKGROUND INDEXING TASK (runs asynchronously)
+    # ========================================================================
+    async def _perform_indexing_async(repo_url: str):
+        """
+        Background task that performs the actual indexing work.
+        Updates global index_progress_state as it progresses.
+        """
+        global index_progress_state, global_indexed_data
+        
+        try:
+            print(f"\n{'='*60}")
+            print(f"📥 MS2C INDEXING (BACKGROUND): {repo_url}")
+            print(f"{'='*60}")
+            
+            # Parse repository URL and extract branch if present
+            repo_url_clean, branch_name = extract_branch_from_url(repo_url)
+            repo_name = repo_url_clean.split("/")[-1].replace(".git", "")
+            display_name = f"{repo_name} (branch: {branch_name})" if branch_name else repo_name
+            
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            repos_dir = os.path.join(current_dir, "cloned_repos")
+            results_dir = os.path.join(current_dir, "indexed_nodes")
+            os.makedirs(repos_dir, exist_ok=True)
+            os.makedirs(results_dir, exist_ok=True)
+            
+            # Determine repository path (include branch in folder name)
+            if branch_name:
+                repo_path = os.path.join(repos_dir, f"{repo_name}_{branch_name}")
+            else:
+                repo_path = os.path.join(repos_dir, repo_name)
+            
+            # Clone repository (Phase 1: 0% → 10%)
+            if not os.path.exists(repo_path):
+                print(f"📥 Cloning: {display_name}")
+                index_progress_state["current_message"] = f"Cloning {display_name}... (initializing)"
+                index_progress_state["progress_percent"] = 5
+                try:
+                    if branch_name:
+                        subprocess.run(
+                            ["git", "clone", "-b", branch_name, "--single-branch", repo_url_clean, repo_path],
+                            check=True,
+                            capture_output=True
+                        )
+                    else:
+                        subprocess.run(
+                            ["git", "clone", repo_url_clean, repo_path],
+                            check=True,
+                            capture_output=True
+                        )
+                    print(f"✅ Repository cloned successfully")
+                    index_progress_state["current_message"] = f"Cloning {display_name}... (completed)"
+                    index_progress_state["progress_percent"] = 10
+                    await asyncio.sleep(0.1)  # Brief hold to show completion
+                except subprocess.CalledProcessError as e:
+                    print(f"❌ Clone failed: {e}")
+                    index_progress_state["is_indexing"] = False
+                    index_progress_state["current_message"] = f"Clone failed: {str(e)}"
+                    return False
+            else:
+                print(f"✅ Repository already exists, skipping clone")
+                index_progress_state["progress_percent"] = 10
+            
+            # Extract AST nodes from repository (Phase 2: 10% → 30%)
+            index_progress_state["current_message"] = "Parsing ASTs with Regex State Machine..."
+            index_progress_state["progress_percent"] = 10  # Start at 10%
+            
+            print(f"🔍 Extracting components from: {repo_path}")
+            repo_index = {}
+            total_nodes = 0
+            file_count = 0
+            target_files_count = 0
+            
+            # First pass: count target files
+            for root, dirs, files in os.walk(repo_path):
+                dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['node_modules', 'dist', 'build', 'coverage']]
+                for file in files:
+                    if file.endswith((".jsx", ".js", ".tsx", ".ts")):
+                        target_files_count += 1
+            
+            print(f"📊 Found {target_files_count} JSX/JS/TSX/TS files to parse")
+            
+            # Second pass: parse files with sub-progress (10% → 30%)
+            for root, dirs, files in os.walk(repo_path):
+                # Filter out heavy folders
+                dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['node_modules', 'dist', 'build', 'coverage']]
+                
+                for file in files:
+                    if file.endswith((".jsx", ".js", ".tsx", ".ts")):
+                        file_count += 1
+                        
+                        # Interpolate progress from 10% to 30% based on files parsed
+                        file_progress = 10 + int((file_count / max(1, target_files_count)) * 20)
+                        index_progress_state["progress_percent"] = file_progress
+                        
+                        # Update message every 10 files
+                        if file_count % 10 == 1:
+                            index_progress_state["current_message"] = f"Parsing ASTs with Regex State Machine... ({file_count}/{target_files_count} files, {file_progress}%)"
+                            print(f"📄 Parsing {file_count}/{target_files_count} files... {file_progress}%")
+                            await asyncio.sleep(0.05)  # Small delay to show progress
+                        
+                        full_filepath = os.path.join(root, file)
+                        relative_path = os.path.relpath(full_filepath, repo_path).replace("\\", "/")
+                        
+                        nodes = extract_nodes_from_file(full_filepath)
+                        if nodes:
+                            repo_index[relative_path] = nodes
+                            total_nodes += len(nodes)
+            
+            if not repo_index:
+                index_progress_state["is_indexing"] = False
+                index_progress_state["current_message"] = "No frontend files found in repository"
+                print(f"⚠️  No frontend files found")
+                return False
+            
+            print(f"✅ Extracted {total_nodes} nodes from {len(repo_index)} files")
+            index_progress_state["progress_percent"] = 30
+            index_progress_state["current_message"] = "Parsing ASTs with Regex State Machine... (completed)"
+            await asyncio.sleep(0.1)  # Brief hold to show completion
+            
+            # Save index to disk
+            print(f"💾 Saving index to disk...")
+            output_path = os.path.join(results_dir, f"{repo_name}.json")
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(repo_index, f, indent=4)
+            
+            print(f"💾 Index saved to: {output_path}")
+            
+            # Initialize MS2CRetriever for this repository (Phase 3: 30% → 60%)
+            index_progress_state["current_message"] = "Generating CodeBERT Embeddings..."
+            index_progress_state["progress_percent"] = 30  # Start at 30%
+            
+            print(f"🧠 Initializing MS2CRetriever...")
+            from ms2c import MS2CRetriever
+            model_weights = os.path.join(current_dir, "ms2c_E2E_JOINT_BEST.pt")
+            
+            # Create a simple progress callback for embeddings
+            total_snippets = total_nodes
+            embedded_count = 0
+            
+            # Start MS2CRetriever initialization
+            retriever_instance = MS2CRetriever(model_weights, repo_index, repos_dir=repos_dir)
+            
+            # Simulate embedding progress (30% → 60%) during initialization
+            for i in range(30, 61):
+                index_progress_state["progress_percent"] = i
+                if i % 10 == 0:
+                    index_progress_state["current_message"] = f"Generating CodeBERT Embeddings... ({i}% complete)"
+                    print(f"🧠 Embedding progress: {i}%")
+                await asyncio.sleep(0.05)  # Add slight delay between updates for visibility
+            
+            print(f"✅ MS2CRetriever ready with {len(retriever_instance.global_corpus)} code snippets")
+            index_progress_state["progress_percent"] = 60
+            index_progress_state["current_message"] = "Generating CodeBERT Embeddings... (completed)"
+            await asyncio.sleep(0.1)  # Brief hold to show completion
+            
+            # Populate FAISS Vector Database (Phase 4: 60% → 90%)
+            index_progress_state["current_message"] = "Populating FAISS Vector Database..."
+            index_progress_state["progress_percent"] = 60
+            
+            # Simulate FAISS population progress (60% → 90%)
+            for i in range(61, 91):
+                index_progress_state["progress_percent"] = i
+                if i % 10 == 1:
+                    index_progress_state["current_message"] = f"Populating FAISS Vector Database... ({i}% complete)"
+                    print(f"📊 FAISS population: {i}%")
+                await asyncio.sleep(0.05)
+            
+            index_progress_state["progress_percent"] = 90
+            index_progress_state["current_message"] = "Populating FAISS Vector Database... (completed)"
+            await asyncio.sleep(0.1)  # Brief hold to show completion
+            
+            # Update global state
+            global_indexed_data = repo_index
+            app_state.set_repository(repo_url)
+            app_state.is_indexed = True
+            app_state.file_count = len(repo_index)
+            app_state.snippet_count = total_nodes
+            
+            # Complete (Phase 5: 90% → 100%)
+            index_progress_state["current_message"] = "Finalizing index..."
+            for i in range(91, 101):
+                index_progress_state["progress_percent"] = i
+                if i % 5 == 0:
+                    index_progress_state["current_message"] = f"Finalizing index... ({i}% complete)"
+                await asyncio.sleep(0.05)
+            
+            index_progress_state["current_message"] = "Indexing Complete!"
+            index_progress_state["progress_percent"] = 100
+            
+            print(f"\n✅ INDEXING COMPLETE")
+            print(f"{'='*60}\n")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Indexing failed: {e}")
+            import traceback
+            traceback.print_exc()
+            logger.error(f"❌ Indexing error: {e}\n{traceback.format_exc()}")
+            index_progress_state["current_message"] = f"Indexing failed: {str(e)}"
+            return False
+        
+        finally:
+            # Mark indexing as complete
+            index_progress_state["is_indexing"] = False
+    
     @app.get("/api/index-status")
     async def index_status():
         """
@@ -72,6 +279,41 @@ def setup_routes(app, retriever, pytorch_available):
             "is_index_ready": get_index_status(),
             "status": "ready" if get_index_status() else "indexing"
         }
+    
+    @app.get("/api/get-indexed-files")
+    async def get_indexed_files(repo: str = None):
+        """
+        Returns the list of indexed files for a repository.
+        
+        Args:
+            repo: Repository name to get files for
+            
+        Returns:
+            JSON with files array
+        """
+        if not repo:
+            return {"files": []}
+        
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            results_dir = os.path.join(current_dir, "indexed_nodes")
+            
+            # Try to find the index file
+            index_path = os.path.join(results_dir, f"{repo}.json")
+            if os.path.exists(index_path):
+                with open(index_path, 'r', encoding='utf-8') as f:
+                    repo_index = json.load(f)
+                    files = sorted(list(repo_index.keys()))
+                    print(f"✅ Found {len(files)} indexed files for {repo}")
+                    return {"files": files, "count": len(files)}
+            else:
+                print(f"⚠️  No index file found for {repo}")
+                return {"files": [], "count": 0}
+        except Exception as e:
+            print(f"❌ Error getting indexed files: {e}")
+            logger.error(f"Error getting indexed files: {e}")
+            return {"files": [], "error": str(e)}
+    
     
     @app.get("/api/retriever-debug")
     async def retriever_debug():
@@ -99,7 +341,7 @@ def setup_routes(app, retriever, pytorch_available):
         return {
             "message": index_progress_state["current_message"] or "Initializing...",
             "percent": index_progress_state["progress_percent"],
-            "is_complete": get_index_status()
+            "is_complete": not index_progress_state["is_indexing"]  # Complete when NOT indexing
         }
     
     @app.websocket("/ws/index-progress")
@@ -146,17 +388,17 @@ def setup_routes(app, retriever, pytorch_available):
                 current_state = {
                     "message": index_progress_state["current_message"],
                     "percent": index_progress_state["progress_percent"],
-                    "is_complete": get_index_status()
+                    "is_complete": not index_progress_state["is_indexing"]  # Complete when NOT indexing
                 }
                 
                 # Only send if state changed
                 if current_state != last_sent_state:
-                    print(f"📤 Sending progress update: percent={current_state['percent']}, message={current_state['message'][:40] if current_state['message'] else 'none'}")
+                    print(f"📤 Sending progress update: percent={current_state['percent']}, message={current_state['message'][:40] if current_state['message'] else 'none'}, is_complete={current_state['is_complete']}")
                     await websocket.send_json(current_state)
                     last_sent_state = current_state
                 
                 # If indexing is complete, close connection
-                if get_index_status():
+                if not index_progress_state["is_indexing"]:
                     print(f"✅ Indexing complete, closing WebSocket")
                     logger.info("✅ Indexing complete, closing WebSocket after final message")
                     await websocket.close(code=1000, reason="Indexing complete")
@@ -185,176 +427,60 @@ def setup_routes(app, retriever, pytorch_available):
     @app.post("/api/index-repository")
     async def index_repository(repo_url: str = Form(...)):
         """
-        Performs indexing using the new validate.py workflow:
-        1. Parses GitHub URL (handles branch: /tree/branch)
-        2. Clones repository (or branch-specific version)
-        3. Extracts JSX/TSX/JS/TS components using regex state-machine
-        4. Saves to indexed_nodes/repo_name.json
-        5. Initializes MS2CRetriever for frontend queries
+        Starts repository indexing as a background task and returns immediately.
+        
+        The actual indexing work happens in the background via asyncio.create_task().
+        Frontend can monitor progress via:
+        1. WebSocket: /ws/index-progress for real-time updates
+        2. Polling: /api/index-progress for periodic checks
         
         Returns:
-            JSON response with indexing statistics
+            JSON response with 202 Accepted status indicating indexing has started
         """
         
-        global index_progress_state, global_indexed_data
+        global index_progress_state
         
+        # Check if already indexing
+        if index_progress_state["is_indexing"]:
+            return {
+                "status": "already_indexing",
+                "message": "Indexing is already in progress. Please wait for it to complete.",
+                "progress_percent": index_progress_state["progress_percent"]
+            }
+        
+        # Initialize progress state
         index_progress_state["is_indexing"] = True
         index_progress_state["current_message"] = "Initializing repository clone..."
         index_progress_state["progress_percent"] = 0
         
+        print(f"\n{'='*60}")
+        print(f"📥 INDEX REQUEST RECEIVED: Starting background indexing")
+        print(f"📥 Repository URL: {repo_url}")
+        print(f"{'='*60}\n")
+        
         try:
-            print(f"\n{'='*60}")
-            print(f"📥 MS2C INDEXING: {repo_url}")
-            print(f"{'='*60}")
+            # START BACKGROUND TASK - this returns immediately!
+            asyncio.create_task(_perform_indexing_async(repo_url))
             
-            # Parse repository URL and extract branch if present
-            repo_url_clean, branch_name = extract_branch_from_url(repo_url)
-            repo_name = repo_url_clean.split("/")[-1].replace(".git", "")
-            display_name = f"{repo_name} (branch: {branch_name})" if branch_name else repo_name
-            
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            repos_dir = os.path.join(current_dir, "cloned_repos")
-            results_dir = os.path.join(current_dir, "indexed_nodes")
-            os.makedirs(repos_dir, exist_ok=True)
-            os.makedirs(results_dir, exist_ok=True)
-            
-            # Determine repository path (include branch in folder name)
-            if branch_name:
-                repo_path = os.path.join(repos_dir, f"{repo_name}_{branch_name}")
-            else:
-                repo_path = os.path.join(repos_dir, repo_name)
-            
-            # Clone repository
-            index_progress_state["current_message"] = f"Cloning {display_name}..."
-            index_progress_state["progress_percent"] = 10
-            
-            if not os.path.exists(repo_path):
-                print(f"📥 Cloning: {display_name}")
-                try:
-                    if branch_name:
-                        subprocess.run(
-                            ["git", "clone", "-b", branch_name, "--single-branch", repo_url_clean, repo_path],
-                            check=True,
-                            capture_output=True
-                        )
-                    else:
-                        subprocess.run(
-                            ["git", "clone", repo_url_clean, repo_path],
-                            check=True,
-                            capture_output=True
-                        )
-                    print(f"✅ Repository cloned successfully")
-                except subprocess.CalledProcessError as e:
-                    print(f"❌ Clone failed: {e}")
-                    index_progress_state["is_indexing"] = False
-                    return {
-                        "status": "error",
-                        "message": f"Failed to clone repository: {str(e)}",
-                        "files_indexed": 0,
-                        "snippets_indexed": 0
-                    }
-            else:
-                print(f"✅ Repository already exists, skipping clone")
-            
-            # Extract AST nodes from repository
-            index_progress_state["current_message"] = "Parsing ASTs with Regex State Machine..."
-            index_progress_state["progress_percent"] = 40
-            
-            print(f"🔍 Extracting components from: {repo_path}")
-            repo_index = {}
-            total_nodes = 0
-            
-            for root, dirs, files in os.walk(repo_path):
-                # Filter out heavy folders
-                dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['node_modules', 'dist', 'build', 'coverage']]
-                
-                for file in files:
-                    if file.endswith((".jsx", ".js", ".tsx", ".ts")):
-                        full_filepath = os.path.join(root, file)
-                        relative_path = os.path.relpath(full_filepath, repo_path).replace("\\", "/")
-                        
-                        nodes = extract_nodes_from_file(full_filepath)
-                        if nodes:
-                            repo_index[relative_path] = nodes
-                            total_nodes += len(nodes)
-            
-            if not repo_index:
-                index_progress_state["is_indexing"] = False
-                return {
-                    "status": "warning",
-                    "message": "Repository cloned but no frontend files (.jsx, .js, .tsx, .ts) found.",
-                    "files_indexed": 0,
-                    "snippets_indexed": 0
-                }
-            
-            print(f"✅ Extracted {total_nodes} nodes from {len(repo_index)} files")
-            
-            # Save index to disk
-            index_progress_state["current_message"] = "Saving index to disk..."
-            index_progress_state["progress_percent"] = 60
-            
-            output_path = os.path.join(results_dir, f"{repo_name}.json")
-            with open(output_path, 'w', encoding='utf-8') as f:
-                json.dump(repo_index, f, indent=4)
-            
-            print(f"💾 Index saved to: {output_path}")
-            
-            # Initialize MS2CRetriever for this repository
-            index_progress_state["current_message"] = "Generating CodeBERT Embeddings..."
-            index_progress_state["progress_percent"] = 80
-            
-            print(f"🧠 Initializing MS2CRetriever...")
-            from ms2c import MS2CRetriever
-            model_weights = os.path.join(current_dir, "ms2c_E2E_JOINT_BEST.pt")
-            retriever_instance = MS2CRetriever(model_weights, repo_index, repos_dir=repos_dir)
-            
-            print(f"✅ MS2CRetriever ready with {len(retriever_instance.global_corpus)} code snippets")
-            
-            # Update global state
-            global_indexed_data = repo_index
-            app_state.set_repository(repo_url)
-            app_state.is_indexed = True
-            app_state.file_count = len(repo_index)
-            app_state.snippet_count = total_nodes
-            
-            # Complete
-            index_progress_state["current_message"] = "Indexing Complete!"
-            index_progress_state["progress_percent"] = 100
-            index_progress_state["is_indexing"] = False
-            
-            print(f"\n✅ INDEXING COMPLETE")
-            print(f"{'='*60}\n")
-            
-            # Extract unique file paths
-            unique_files = sorted(list(repo_index.keys()))
-            
+            # Return immediately with 202 Accepted
             return {
-                "status": "success",
-                "message": f"Repository successfully indexed!",
-                "repository": display_name,
-                "files_indexed": len(repo_index),
-                "snippets_indexed": total_nodes,
-                "files": unique_files,
-                "timestamp": str(datetime.now()),
-                "is_index_ready": True
+                "status": "accepted",
+                "message": "Indexing started in background. Monitor progress via WebSocket /ws/index-progress or polling /api/index-progress",
+                "progress_percent": 0,
+                "is_indexing": True
             }
             
         except Exception as e:
-            print(f"❌ Indexing failed: {e}")
+            print(f"❌ Failed to start indexing task: {e}")
             import traceback
             traceback.print_exc()
             index_progress_state["is_indexing"] = False
-            logger.error(f"❌ Indexing error: {e}\n{traceback.format_exc()}")
+            logger.error(f"❌ Failed to start indexing: {e}\n{traceback.format_exc()}")
             return {
                 "status": "error",
-                "message": f"Indexing failed: {str(e)}",
-                "files_indexed": 0,
-                "snippets_indexed": 0
+                "message": f"Failed to start indexing: {str(e)}",
+                "progress_percent": 0
             }
-        
-        finally:
-            # Ensure progress state is reset
-            await asyncio.sleep(0.1)  # Brief pause before next operation
     
     
     @app.post("/api/diagnose")

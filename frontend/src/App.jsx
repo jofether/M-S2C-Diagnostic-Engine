@@ -13,7 +13,6 @@ function App() {
   const [targetFileHint, setTargetFileHint] = useState('')
   const [uploadedFile, setUploadedFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
-  const [loadingMessage, setLoadingMessage] = useState('Parsing ASTs with Regex State Machine...')
   const [dragActive, setDragActive] = useState(false)
   const [darkMode, setDarkMode] = useState(true)
   const [indexedFiles, setIndexedFiles] = useState([]) // Files from indexed repo
@@ -51,6 +50,48 @@ function App() {
     console.log('   Length:', indexedFiles.length)
     console.log('   Content:', indexedFiles)
   }, [indexedFiles])
+
+  // Transition from LOADING to QUERY when indexing is ready
+  useEffect(() => {
+    if (repositoryIndexed && isIndexReady && currentState === 'LOADING') {
+      console.log('✅ Indexing ready! Transitioning to QUERY state...')
+      setCurrentState('QUERY')
+    }
+  }, [repositoryIndexed, isIndexReady, currentState])
+
+  // Fetch file list when indexing is complete
+  useEffect(() => {
+    if (!repositoryIndexed || !isIndexReady || indexedFiles.length > 0) {
+      // Only fetch when indexing just completed and files not yet loaded
+      return
+    }
+
+    const fetchFileList = async () => {
+      try {
+        console.log('📋 Fetching file list from indexed repository...')
+        
+        // Try to fetch from the indexed nodes JSON directly
+        const repo_name = indexedRepoName || 'Repository'
+        const indexed_json_url = `http://localhost:8000/api/get-indexed-files?repo=${encodeURIComponent(repo_name.split('_')[0])}`
+        
+        const response = await fetch(indexed_json_url)
+        if (response.ok) {
+          const data = await response.json()
+          const files = data.files || []
+          console.log('✅ File list fetched:', files.length, 'files')
+          setIndexedFiles(['', ...files])
+        } else {
+          console.warn('⚠️  Could not fetch file list, using empty list')
+          setIndexedFiles([''])
+        }
+      } catch (error) {
+        console.error('❌ Error fetching file list:', error)
+        setIndexedFiles([''])
+      }
+    }
+
+    fetchFileList()
+  }, [repositoryIndexed, isIndexReady, indexedRepoName, indexedFiles.length])
 
   // Removed: Cycling messages effect
   // Now we get real stage messages from backend via WebSocket/polling
@@ -96,7 +137,6 @@ function App() {
           
           // Use REAL progress data from backend (not estimated)
           setProgressPercent(data.percent)
-          setLoadingMessage(data.message || 'Indexing repository...')
           
           // Calculate ETA with SMOOTHING to prevent jumps
           if (data.percent > 0 && data.percent < 100) {
@@ -179,9 +219,6 @@ function App() {
             percent: data.percent,
             is_complete: data.is_complete,
           })
-          
-          // Update loading message with current progress
-          setLoadingMessage(data.message)
           
           // Update progress percentage
           if (typeof data.percent === 'number') {
@@ -300,7 +337,7 @@ function App() {
 
     setCurrentState('LOADING')
     
-    // Set as indexed IMMEDIATELY so WebSocket connects before backend starts
+    // Set as indexed IMMEDIATELY so WebSocket connects before backend starts indexing
     setRepositoryIndexed(true)
     setIsIndexReady(false)  // Mark as not ready until indexing completes
     
@@ -308,17 +345,41 @@ function App() {
     setProgressPercent(0)
     setEstimatedTimeRemaining(null)
 
+    // Extract repo name and branch from URL for later use
+    const url = repositoryUrl.trim()
+    let repoName = 'Repository'
+    let branchName = 'main'
+    
+    // Parse GitHub URL format: https://github.com/org/repo or https://github.com/org/repo/tree/branch
+    const parts = url.split('/')
+    if (parts.length >= 4) {
+      // Check if URL contains /tree/ for branch specification
+      const treeIndex = parts.indexOf('tree')
+      if (treeIndex > 0 && parts.length > treeIndex + 1) {
+        // Format: https://github.com/org/repo/tree/branch
+        repoName = parts[treeIndex - 1] // repo name is right before /tree/
+        branchName = parts.slice(treeIndex + 1).join('/') // branch can contain slashes
+      } else {
+        // Format: https://github.com/org/repo (no branch specified)
+        repoName = parts[parts.length - 1] || 'Repository'
+        branchName = 'main' // default branch
+      }
+    }
+    
+    setIndexedRepoName(repoName)
+    setIndexedBranchName(branchName)
+
     try {
       const formData = new FormData()
       formData.append('repo_url', repositoryUrl.trim())
 
-      console.log('🔗 Attempting to fetch from:', 'http://localhost:8000/api/index-repository')
+      console.log('🔗 Attempting to POST to:', 'http://localhost:8000/api/index-repository')
       console.log('📦 Repository URL:', repositoryUrl.trim())
-      console.log('🔌 WebSocket should be connecting now for real-time progress...')
+      console.log('🔌 WebSocket will connect for real-time progress updates...')
 
-      // Create an AbortController for timeout
+      // Create an AbortController for timeout (10 minutes for the POST response)
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 600000) // 10 minute timeout for dual-encoder embedding
+      const timeoutId = setTimeout(() => controller.abort(), 600000)
 
       const response = await fetch('http://localhost:8000/api/index-repository', {
         method: 'POST',
@@ -339,57 +400,36 @@ function App() {
 
       const data = await response.json()
       console.log('✅ Index response:', data)
-      console.log('📁 Files array:', data.files)
-      console.log('📊 Files count:', data.files ? data.files.length : 'N/A')
+      console.log('📊 Response status:', data.status)
 
-      // Check for error status in response
-      if (data.status === 'error' || data.status === 'warning') {
+      // Check response status
+      if (data.status === 'error') {
         throw new Error(data.message || 'Repository indexing failed')
       }
 
-      // Extract repo name and branch from URL
-      const url = repositoryUrl.trim()
-      let repoName = 'Repository'
-      let branchName = 'main'
-      
-      // Parse GitHub URL format: https://github.com/org/repo or https://github.com/org/repo/tree/branch
-      const parts = url.split('/')
-      if (parts.length >= 4) {
-        // Check if URL contains /tree/ for branch specification
-        const treeIndex = parts.indexOf('tree')
-        if (treeIndex > 0 && parts.length > treeIndex + 1) {
-          // Format: https://github.com/org/repo/tree/branch
-          repoName = parts[treeIndex - 1] // repo name is right before /tree/
-          branchName = parts.slice(treeIndex + 1).join('/') // branch can contain slashes
+      // Handle both "accepted" (new async) and "success" (old sync) statuses
+      if (data.status === 'accepted' || data.status === 'already_indexing') {
+        console.log('✅ Indexing started in background! Monitoring progress via WebSocket...')
+        // The WebSocket effect will monitor progress and set isIndexReady when done
+      } else if (data.status === 'success') {
+        // Old synchronous behavior (for backward compatibility)
+        console.log('✅ Indexing completed synchronously!')
+        if (data.files && Array.isArray(data.files)) {
+          console.log('✓ Setting indexedFiles with', data.files.length, 'files')
+          setIndexedFiles(['', ...data.files])
         } else {
-          // Format: https://github.com/org/repo (no branch specified)
-          repoName = parts[parts.length - 1] || 'Repository'
-          branchName = 'main' // default branch
+          console.warn('⚠️  No files in response, using fallback')
+          setIndexedFiles([''])
         }
-      }
-      
-      setIndexedRepoName(repoName)
-      setIndexedBranchName(branchName)
-      
-      // Initialize isIndexReady from response
-      if (data.is_index_ready !== undefined) {
-        console.log('📊 Backend is_index_ready:', data.is_index_ready)
-        setIsIndexReady(data.is_index_ready)
-      } else {
-        console.log('⚠️ Assuming backend is still indexing...')
-        setIsIndexReady(false)
-      }
-      
-      // Set the files from the API response (not hardcoded)
-      if (data.files && Array.isArray(data.files)) {
-        console.log('✓ Setting indexedFiles with', data.files.length, 'files')
-        setIndexedFiles(['', ...data.files])  // Add empty option for "Select file..."
-      } else {
-        console.warn('⚠️  No files in response, using fallback')
-        setIndexedFiles([''])  // Fallback if no files
+        setIsIndexReady(true)
+        setProgressPercent(100)
+        setCurrentState('QUERY')
+        return
       }
 
-      setCurrentState('QUERY')
+      // For new async flow: wait for WebSocket to complete indexing
+      // The WebSocket effect will set isIndexReady = true and trigger file list fetch
+      
     } catch (error) {
       console.error('❌ Indexing error full:', error)
       console.error('   Error type:', error.constructor.name)
@@ -398,7 +438,7 @@ function App() {
       
       let errorMsg = error.message
       if (error.name === 'AbortError') {
-        errorMsg = 'Indexing timed out after 2 minutes. Repository might be too large.'
+        errorMsg = 'Request timed out after 10 minutes. Repository might be too large or backend is not responding.'
       }
       
       // Reset state on error
@@ -584,6 +624,9 @@ function App() {
     setConversationHistory([])
     setQueryHistory([])
     setMenuOpen(false)
+    // Reset progress/loading states
+    setProgressPercent(0)
+    setEstimatedTimeRemaining(null)
   }
 
   const handleLoadHistoryItem = (historyItem) => {
@@ -699,7 +742,6 @@ function App() {
     }`}>
       {currentState === 'LOADING' && (
         <LoadingState
-          message={loadingMessage}
           darkMode={darkMode}
           progressPercent={progressPercent}
           estimatedTimeRemaining={estimatedTimeRemaining}
@@ -836,7 +878,7 @@ function InitialState({ repositoryUrl, setRepositoryUrl, onIndexRepository, dark
 // ============================================================================
 // STATE II: Loading State with Cycling Messages
 // ============================================================================
-function LoadingState({ message, darkMode, progressPercent = 0, estimatedTimeRemaining = null }) {
+function LoadingState({ darkMode, progressPercent = 0, estimatedTimeRemaining = null }) {
   // Define all indexing stages
   const stages = [
     { percent: 10, message: 'Cloning repository...' },
@@ -868,16 +910,26 @@ function LoadingState({ message, darkMode, progressPercent = 0, estimatedTimeRem
     return `${minutes} min ${Math.ceil(secs)} sec remaining`
   }
 
-  // Determine stage based on message
+  // Determine stage based on message and progress percent
   const getStage = () => {
-    if (message.includes('clone') || message.includes('Cloning')) return { step: 1, total: 5, label: 'Step 1 of 5' }
-    if (message.includes('AST') || message.includes('Parsing')) return { step: 2, total: 5, label: 'Step 2 of 5' }
-    if (message.includes('CodeBERT') || message.includes('Embedding')) return { step: 3, total: 5, label: 'Step 3 of 5' }
-    if (message.includes('FAISS') || message.includes('Database')) return { step: 4, total: 5, label: 'Step 4 of 5' }
+    if (progressPercent <= 10) return { step: 1, total: 5, label: 'Step 1 of 5' }
+    if (progressPercent <= 30) return { step: 2, total: 5, label: 'Step 2 of 5' }
+    if (progressPercent <= 60) return { step: 3, total: 5, label: 'Step 3 of 5' }
+    if (progressPercent <= 90) return { step: 4, total: 5, label: 'Step 4 of 5' }
     return { step: 5, total: 5, label: 'Step 5 of 5' }
+  }
+
+  // Get the correct message based on current progress (not backend message)
+  const getCurrentMessage = () => {
+    if (progressPercent <= 10) return 'Cloning repository...'
+    if (progressPercent <= 30) return 'Parsing ASTs with Regex State Machine...'
+    if (progressPercent <= 60) return 'Generating CodeBERT Embeddings...'
+    if (progressPercent <= 90) return 'Populating FAISS Vector Database...'
+    return 'Indexing Complete!'
   }
   
   const stage = getStage()
+  const syncedMessage = getCurrentMessage()
   const timeRemaining = formatTimeRemaining(estimatedTimeRemaining)
 
   return (
@@ -961,7 +1013,7 @@ function LoadingState({ message, darkMode, progressPercent = 0, estimatedTimeRem
           <p className={`text-lg font-semibold transition-opacity duration-500 text-center ${
             darkMode ? 'text-white' : 'text-slate-700'
           }`}>
-            {message}
+            {syncedMessage}
           </p>
         </div>
 
@@ -1429,37 +1481,58 @@ function QueryState({
                                         }`}>
                                           <span>📄</span> {candidate.name || candidate.file || 'Unknown'}
                                         </p>
-                                        {(candidate.file || candidate.lines) && (
+                                        {(candidate.file || (candidate.lines && candidate.lines !== '?')) && (
                                           <p className={`text-xs mb-2 ${
                                             darkMode ? 'text-slate-500' : 'text-slate-600'
                                           }`}>
                                             {candidate.file && <span>{candidate.file}</span>}
-                                            {candidate.lines && <span> (Lines {candidate.lines})</span>}
+                                            {candidate.lines && candidate.lines !== '?' && <span> (Lines {candidate.lines})</span>}
                                           </p>
                                         )}
                                         {candidate.code && (
                                           <div className="relative">
-                                            <button
-                                              onClick={() => {
-                                                if (candidate && candidate.code) {
-                                                  navigator.clipboard.writeText(candidate.code);
-                                                }
-                                              }}
-                                              className={`absolute -top-7 right-1 px-2 py-1 text-xs rounded font-semibold transition-all ${
-                                                darkMode
-                                                  ? 'bg-slate-600 hover:bg-slate-500 text-white'
-                                                  : 'bg-slate-300 hover:bg-slate-400 text-slate-900'
-                                              }`}
-                                            >
-                                              📋 Copy
-                                            </button>
-                                            <pre className={`text-xs mb-2 p-2 rounded overflow-auto max-h-24 break-words ${
-                                              darkMode
-                                                ? 'bg-slate-700/50 border border-slate-600 text-slate-300'
-                                                : 'bg-slate-100 border border-slate-300 text-slate-700'
-                                            }`}>
-                                              {candidate.code}
-                                            </pre>
+                                            {(() => {
+                                              // Extract line number from code prefix format: [5] (L:24-29) code...
+                                              const codeText = candidate.code || ''
+                                              const lineMatch = codeText.match(/\(L:(\d+(?:-\d+)?)\)/)
+                                              const lineNumber = lineMatch ? lineMatch[1] : candidate.lines
+                                              
+                                              // Remove the [N] (L:X-Y) prefix from the code for cleaner display
+                                              const cleanedCode = codeText.replace(/^\[\d+\]\s*\(L:\d+(?:-\d+)?\)\s*/, '').trim()
+                                              
+                                              return (
+                                                <>
+                                                  {lineNumber && lineNumber !== '?' && (
+                                                    <p className={`text-xs font-semibold mb-1 ${
+                                                      darkMode ? 'text-slate-500' : 'text-slate-600'
+                                                    }`}>
+                                                      (Lines {lineNumber})
+                                                    </p>
+                                                  )}
+                                                  <button
+                                                    onClick={() => {
+                                                      if (cleanedCode) {
+                                                        navigator.clipboard.writeText(cleanedCode);
+                                                      }
+                                                    }}
+                                                    className={`absolute -top-7 right-1 px-2 py-1 text-xs rounded font-semibold transition-all ${
+                                                      darkMode
+                                                        ? 'bg-slate-600 hover:bg-slate-500 text-white'
+                                                        : 'bg-slate-300 hover:bg-slate-400 text-slate-900'
+                                                    }`}
+                                                  >
+                                                    📋 Copy
+                                                  </button>
+                                                  <pre className={`text-xs mb-2 p-2 rounded overflow-auto max-h-24 break-words font-mono ${
+                                                    darkMode
+                                                      ? 'bg-slate-700/50 border border-slate-600 text-slate-300'
+                                                      : 'bg-slate-100 border border-slate-300 text-slate-700'
+                                                  }`}>
+                                                    {cleanedCode}
+                                                  </pre>
+                                                </>
+                                              )
+                                            })()}
                                           </div>
                                         )}
                                         {candidate.explanation && (

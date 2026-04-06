@@ -214,7 +214,14 @@ def reindex_retriever(index_dict):
 
 def get_index_status():
     """
-    STUB: Get index status (always returns True for new workflow).
-    Used by old routes.py workflow. Not used in new validate.py workflow.
+    Returns the current indexing status.
+    Returns True only when indexing is NOT in progress.
     """
-    return True
+    # This will be imported from routes.py to check the actual state
+    try:
+        from routes import index_progress_state
+        # Indexing is "done" when is_indexing is False
+        return not index_progress_state.get("is_indexing", False)
+    except:
+        # Fallback to True if we can't import
+        return True
