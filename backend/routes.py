@@ -21,6 +21,9 @@ from input_quality import InputQualityAnalyzer
 
 # Global data storage
 global_indexed_data = {}
+retriever_cache = {}  # Cache MS2CRetriever instances per repository to avoid recreating embeddings
+global_retriever = None  # Shared retriever instance
+global_shared_model = None  # Shared MS2CModel instance
 
 # Global progress state for WebSocket-based progress streaming
 index_progress_state = {
@@ -46,7 +49,7 @@ def extract_target_file(bug_description: str) -> tuple:
     return None, bug_description
 
 
-def setup_routes(app, retriever, pytorch_available):
+def setup_routes(app, retriever, pytorch_available, shared_model=None):
     """
     Register all routes with the FastAPI app.
     
@@ -54,10 +57,17 @@ def setup_routes(app, retriever, pytorch_available):
         app: FastAPI application instance
         retriever: MS2CRetriever instance
         pytorch_available: Boolean indicating if PyTorch is available
+        shared_model: Optional pre-initialized MS2CModel for performance optimization
     """
     
-    # Initialize input quality analyzer (independent from retrieval pipeline)
-    input_analyzer = InputQualityAnalyzer()
+    # Assign to module-level globals so route handlers can access them
+    global global_retriever, global_shared_model
+    global_retriever = retriever
+    global_shared_model = shared_model
+    
+    # Initialize input quality analyzer with optional shared model
+    # If shared_model is provided, the analyzer will use it instead of creating its own
+    input_analyzer = InputQualityAnalyzer(shared_model=shared_model)
     
     # ========================================================================
     # BACKGROUND INDEXING TASK (runs asynchronously)
@@ -199,8 +209,12 @@ def setup_routes(app, retriever, pytorch_available):
             total_snippets = total_nodes
             embedded_count = 0
             
-            # Start MS2CRetriever initialization
-            retriever_instance = MS2CRetriever(model_weights, repo_index, repos_dir=repos_dir)
+            # Start MS2CRetriever initialization (pass shared model for performance optimization)
+            retriever_instance = MS2CRetriever(model_weights, repo_index, repos_dir=repos_dir, shared_model=global_shared_model)
+            
+            # 💾 Cache the retriever so searches don't need to recreate embeddings
+            retriever_cache[repo_name] = retriever_instance
+            print(f"💾 Cached MS2CRetriever for {repo_name} - future searches will be instant!")
             
             # Simulate embedding progress (30% → 60%) during initialization
             for i in range(30, 61):
@@ -915,10 +929,24 @@ def setup_routes(app, retriever, pytorch_available):
             repos_root = os.path.join(current_dir, "cloned_repos")
             model_weights = os.path.join(current_dir, "ms2c_E2E_JOINT_BEST.pt")
             
-            print(f"🧠 Initializing MS2CRetriever with {len(repo_index)} files ({total_nodes} total nodes)...")
-            retriever = MS2CRetriever(model_weights, repo_index, repos_dir=repos_root)
+            # 🚀 PERFORMANCE OPTIMIZATION: Check if retriever is already cached
+            # Retrievers are expensive to create (requires encoding all snippets)
+            # Reuse cached retriever for same repository to save 5-7 seconds per search
+            cache_key = repo_name
             
-            print(f"\n✅ MS2CRetriever initialized:")
+            if cache_key in retriever_cache:
+                print(f"✅ Using CACHED retriever for {repo_name} (skipping embedding encoding)")
+                retriever = retriever_cache[cache_key]
+            else:
+                print(f"🧠 Creating NEW MS2CRetriever with {len(repo_index)} files ({total_nodes} total nodes)...")
+                # Pass shared model to avoid double initialization (performance optimization)
+                retriever = MS2CRetriever(model_weights, repo_index, repos_dir=repos_root, shared_model=global_shared_model)
+                
+                # Cache the retriever for future searches
+                retriever_cache[cache_key] = retriever
+                print(f"💾 Cached retriever for {repo_name}")
+            
+            print(f"\n✅ MS2CRetriever ready:")
             print(f"   global_corpus length: {len(retriever.global_corpus)}")
             print(f"   global_embeddings: {retriever.global_embeddings is not None}")
             if retriever.global_embeddings is not None:
@@ -926,7 +954,7 @@ def setup_routes(app, retriever, pytorch_available):
             print(f"   unique_files: {len(retriever.unique_files)}")
             
             if len(retriever.global_corpus) == 0:
-                print(f"❌ ERROR: Retriever corpus is empty after initialization!")
+                print(f"❌ ERROR: Retriever corpus is empty!")
                 return {
                     "status": "error",
                     "message": "Retriever corpus is empty. Check index format.",

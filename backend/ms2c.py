@@ -67,16 +67,25 @@ class MS2CRetriever:
     the application of the additive heuristic scalpel matrix.
     """
 
-    def __init__(self, model_path, index_dict, repos_dir=None, batch_size=64):
+    def __init__(self, model_path, index_dict, repos_dir=None, batch_size=64, shared_model=None):
         print("\n[TRACE] --- Initializing MS2C Pipeline ---")
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
-        self.model = MS2CModel().to(self.device)
+        
+        # Use shared model if provided (performance optimization)
+        if shared_model is not None:
+            print(f"[TRACE] Using shared MS2CModel instance (performance optimization)")
+            self.model = shared_model
+        else:
+            # Fall back to creating new model if not provided (backward compatibility)
+            print(f"[TRACE] Creating new MS2CModel instance")
+            self.model = MS2CModel().to(self.device)
 
-        if os.path.exists(model_path):
-            self.model.load_state_dict(torch.load(model_path, map_location=self.device, weights_only=True))
+            if os.path.exists(model_path):
+                self.model.load_state_dict(torch.load(model_path, map_location=self.device, weights_only=True))
 
-        self.model.eval()
+            self.model.eval()
+        
         self.text_tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
         self.image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k")
 

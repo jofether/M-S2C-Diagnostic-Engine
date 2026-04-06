@@ -24,14 +24,26 @@ logger = logging.getLogger(__name__)
 class InputQualityAnalyzer:
     """Computes gating weight for bug description + screenshot."""
     
-    def __init__(self):
-        """Initialize the gating weight analyzer."""
+    def __init__(self, shared_model=None):
+        """Initialize the gating weight analyzer.
+        
+        Args:
+            shared_model: Optional pre-initialized MS2CModel instance for performance optimization.
+                         If None, creates a new model (backward compatibility).
+        """
         logger.info("🧠 Gating Weight Analyzer initialized")
         
-        # Initialize neural model for gating
+        # Use shared model if provided (for performance optimization)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = MS2CModel().to(self.device)
-        self.model.eval()
+        
+        if shared_model is not None:
+            print(f"🧠 Using shared MS2CModel instance (performance optimization)")
+            self.model = shared_model
+        else:
+            # Fall back to creating new model if not provided (backward compatibility)
+            print(f"🧠 Creating new MS2CModel instance")
+            self.model = MS2CModel().to(self.device)
+            self.model.eval()
         
         self.text_tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
         self.image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k")
