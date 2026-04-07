@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+"""
+Backend Status Check Script.
+
+Tests the /api/retriever-debug endpoint to verify that the MS2C retriever
+is fully initialized and ready to process queries.
+
+Usage:
+    python test_status.py
+    
+Requirements:
+    - Backend must be running on http://localhost:8000
+"""
+
 import urllib.request
 import json
 

@@ -1,7 +1,45 @@
+/**
+ * M-S2C Diagnostic Engine - React Frontend Application
+ * 
+ * Main application component that provides a UI for:
+ * 1. Indexing GitHub repositories to build semantic code embeddings
+ * 2. Diagnosing bugs by querying indexed repositories with descriptions and screenshots
+ * 3. Displaying ranked candidate solutions with code snippets
+ * 4. Managing query history and conversation state
+ * 
+ * Key Features:
+ * - Real-time indexing progress tracking via WebSocket
+ * - Multi-modal bug diagnosis (text + screenshot)
+ * - Carousel navigation through candidate solutions
+ * - Dark mode support
+ * - Persistent query history in localStorage
+ * - Responsive design with drag-and-drop file upload
+ * 
+ * Architecture:
+ * - State Management: React hooks (useState, useEffect, useRef)
+ * - Backend Integration: Fetch API and WebSocket
+ * - Styling: Tailwind CSS with dark mode
+ * - Code Display: Syntax highlighting with Prism
+ * 
+ * Components:
+ * - Header: Navigation and dark mode toggle
+ * - Main Area: Dynamic content based on currentState (QUERY, INDEX, RESULTS)
+ * - Sidebar: Query history and navigation
+ * - Chat Interface: Conversation history display
+ */
+
 import { useState, useEffect, useRef } from 'react'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
+/**
+ * Main App Component
+ * 
+ * Manages the entire application state and user interface for the MS2C diagnostic engine.
+ * Handles repository indexing, bug diagnosis, and result visualization.
+ * 
+ * @component
+ */
 function App() {
   const [currentState, setCurrentState] = useState('QUERY')
   const [repositoryUrl, setRepositoryUrl] = useState('')
@@ -332,6 +370,13 @@ function App() {
     }
   }, [repositoryIndexed, isIndexReady])
 
+  /**
+   * Handles repository indexing by sending the GitHub URL to the backend.
+   * Initiates WebSocket connection to track real-time progress.
+   * 
+   * @async
+   * @returns {Promise<void>}
+   */
   const handleIndexRepository = async () => {
     if (!repositoryUrl.trim()) return
 
@@ -452,6 +497,13 @@ function App() {
     }
   }
 
+  /**
+   * Handles bug diagnosis by sending description and screenshot to backend.
+   * Adds results to conversation history and displays ranked candidates.
+   * 
+   * @async
+   * @returns {Promise<void>}
+   */
   const handleDiagnoseBug = async () => {
     if (!bugDescription.trim()) return
 
@@ -705,6 +757,13 @@ function App() {
     }
   }
 
+  /**
+   * Handles drag-and-drop file uploads for screenshot images.
+   * Validates file type and updates image preview.
+   * 
+   * @param {DragEvent} e - The drag event
+   * @returns {void}
+   */
   const handleDrop = (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -723,6 +782,13 @@ function App() {
     }
   }
 
+  /**
+   * Handles file selection from the file input element.
+   * Updates the uploaded file state and generates image preview.
+   * 
+   * @param {Event} e - The change event from file input
+   * @returns {void}
+   */
   const handleFileSelect = (e) => {
     if (e.target.files && e.target.files[0]) {
       setUploadedFile(e.target.files[0])

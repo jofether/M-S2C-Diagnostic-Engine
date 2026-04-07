@@ -48,15 +48,46 @@ class MS2CModel(nn.Module):
         )
 
     def forward_text(self, input_ids, attention_mask):
+        """
+        Encode text/code input using CodeBERT.
+        
+        Args:
+            input_ids: Tokenized input IDs from CodeBERT tokenizer
+            attention_mask: Attention mask for padded tokens
+            
+        Returns:
+            Normalized 768-dim embedding from CodeBERT
+        """
         outputs = self.codebert(input_ids=input_ids, attention_mask=attention_mask)
         return torch.nn.functional.normalize(outputs.last_hidden_state[:, 0, :], p=2, dim=1)
 
     def forward_image(self, pixel_values):
+        """
+        Encode image input using Vision Transformer (ViT).
+        Projects ViT embeddings to CodeBERT's dimension space.
+        
+        Args:
+            pixel_values: Image pixels preprocessed by ViTImageProcessor
+            
+        Returns:
+            Normalized 768-dim embedding aligned with CodeBERT space
+        """
         outputs = self.vit(pixel_values=pixel_values)
         projected_embedding = self.mlp_projection(outputs.last_hidden_state[:, 0, :])
         return torch.nn.functional.normalize(projected_embedding, p=2, dim=1)
 
     def compute_gating_weight(self, text_emb, visual_emb):
+        """
+        Compute adaptive gating weight for multimodal fusion.
+        Learns to balance text vs visual embeddings based on input quality.
+        
+        Args:
+            text_emb: CodeBERT text embedding (batch_size, 768)
+            visual_emb: Projected ViT visual embedding (batch_size, 768)
+            
+        Returns:
+            Gating weight alpha ∈ [0, 1] where alpha weights text, (1-alpha) weights visual
+        """
         return self.gating_network(torch.cat([text_emb, visual_emb], dim=1))
 
 

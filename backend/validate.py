@@ -1,3 +1,15 @@
+"""
+Model Validation and Testing Module.
+
+This module validates the MS2C model checkpoint and ensures that trained weights
+are properly loaded. It tests the retriever functionality and verifies that the
+gating network produces adaptive outputs.
+
+Functions:
+- extract_branch_from_url: Parse GitHub URLs to extract branch names
+- (Additional test functions can be added here)
+"""
+
 import os
 import sys
 import json

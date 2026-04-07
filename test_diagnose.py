@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+"""
+Integration Test for MS2C Diagnostic Engine Backend.
+
+This script tests the /api/diagnose endpoint to verify that the backend
+is running and properly diagnosing bugs. It sends a sample bug description
+and prints the diagnosis results.
+
+Usage:
+    python test_diagnose.py
+    
+Requirements:
+    - Backend must be running on http://localhost:8000
+    - A repository must be indexed first
+"""
+
 import urllib.request
 import urllib.parse
 import json
