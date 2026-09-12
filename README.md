@@ -1,88 +1,92 @@
-# CryptoCrafters
+# M-S2C Diagnostic Engine
 
-An interactive educational gaming platform featuring Cryptogram and Crossword puzzles. CryptoCrafters blends a vanilla web frontend with robust Firebase integration to handle complex data structures, secure data architecture, and team collaboration workflows.
+M-S2C is a cloud-integrated diagnostic reporting tool built to capture, analyze, and manage software bugs. It combines a TypeScript frontend with comprehensive Google Cloud Platform (GCP) database management to handle file attachments, screenshots, and issue tracking.
 
 ## Architecture Overview
 
 | Layer | Responsibility | Key Tech |
 | --- | --- | --- |
-| Frontend | Game interfaces, dashboard, contact forms | Vanilla HTML/CSS/JS |
-| Game Engine | Puzzle logic, validation, and interactivity | JavaScript (`crossword.js`, `cryptogram.js`) |
-| Storage/Backend | Real-time data handling and backend integration | Firebase (`firebase.js`), Node.js |
+| Frontend | Bug report UI, file/screenshot upload, repository selection | TypeScript, React, Tailwind CSS |
+| Compute/API | Request handling, file processing, issue routing | Node.js, Express |
+| Storage | Screenshot and file attachments | Google Cloud Storage (GCP) |
+| Database | Bug records, user data, diagnostic logs | Google Cloud Firestore (GCP) |
 
 ## Repository Layout
 
 ```text
-CryptoCraftersFinal/
-├── about.html                  # Project and team information UI
-├── about.css                   # Styling for the about page
-├── contact.html                # Contact and inquiry interface
-├── contact.css                 # Styling for contact page
-├── contact.js                  # Contact form submission logic
-├── crossword.html              # Crossword puzzle player UI
-├── crossword.css               # Crossword styling
-├── crossword.js                # Crossword game engine and validation
-├── cryptogram.html             # Cryptogram puzzle player UI
-├── cryptogram.css              # Cryptogram styling
-├── cryptogram.js               # Cryptogram game engine and cipher logic
-├── firebase.js                 # Firebase client SDK initialization and config
-├── home.html                   # Main landing dashboard
-├── home.css                    # Dashboard styling
-├── home.js                     # Dashboard routing and state logic
-├── icons/                      # Static assets (crypto-logo, keys, cube.gif, etc.)
+M-S2C-Diagnostic-Engine/
+├── frontend/                   # Client-side React application
+│   ├── src/
+│   │   ├── components/         # UI components (UploadForm, RepoSelect, etc.)
+│   │   ├── services/           # API and GCP integration logic
+│   │   ├── styles/             # Tailwind CSS configurations
+│   │   └── App.tsx             # Main application view
+│   ├── package.json
+│   └── tsconfig.json
+├── backend/                    # Node.js/Express server
+│   ├── controllers/            # Request handlers for bug submission
+│   ├── routes/                 # API endpoint definitions
+│   ├── services/               # GCP Firestore and Storage integration
+│   ├── server.ts               # Server entry point
+│   └── package.json
+├── docs/                       # Project documentation and API contracts
 └── README.md
 Prerequisites
-Firebase project with Firestore/Realtime Database enabled.
+Google Cloud Platform (GCP) account with Firestore and Cloud Storage enabled.
 
-Node.js 18+ (for local development server).
+GCP Service Account JSON key with read/write access to Firestore and Storage.
 
-Modern web browser.
+Node.js 18+ and npm installed.
 
-Frontend & Database Setup
-Populate Firebase config:
+Local Setup
+1. GCP Configuration
+Create a Cloud Storage bucket for attachments.
 
-JavaScript
-// firebase.js
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-Serve locally (using Node.js serve or any static server):
+Initialize a Firestore database.
+
+Download your Service Account JSON key and place it in the backend/ directory (ensure this file is gitignored).
+
+2. Backend Initialization
+Bash
+cd backend
+npm install
+Create a .env file in the backend/ directory:
+
+Code snippet
+PORT=8080
+GCP_PROJECT_ID=your-project-id
+GCP_KEYFILE_PATH=./your-service-account-key.json
+GCS_BUCKET_NAME=your-storage-bucket-name
+Start the backend server:
 
 Bash
-npx serve .
-Open http://localhost:3000/home.html in your browser to access the main dashboard and navigate to the games.
+npm run dev
+3. Frontend Initialization
+Bash
+cd frontend
+npm install
+Create a .env file in the frontend/ directory:
+
+Code snippet
+NEXT_PUBLIC_API_URL=http://localhost:8080/api
+Start the frontend development server:
+
+Bash
+npm start
+The application will be available at http://localhost:3000.
 
 Deployment
-Frontend (Firebase Hosting)
-Install Firebase CLI and log in:
+Backend (GCP Cloud Run / App Engine)
+Ensure your environment variables are configured in your GCP console. Build the TypeScript code and deploy using the gcloud CLI or your preferred CI/CD pipeline.
 
-Bash
-npm install -g firebase-tools
-firebase login
-Initialize and deploy:
-
-Bash
-firebase init hosting
-firebase deploy --only hosting
-Ensure your firebase.json maps the public directory to the folder containing your HTML files.
-
-Useful Docs & Scripts
-crossword.js – Contains the core array structures and validation logic for the crossword game.
-
-cryptogram.js – Handles the cipher generation and input matching for the cryptogram game.
-
-firebase.js – Centralized connection point for all backend database integrations.
+Frontend (Vercel / Firebase Hosting)
+Deploy the frontend/ directory, ensuring the NEXT_PUBLIC_API_URL environment variable points to your deployed backend URL.
 
 Project Status & Next Steps
-✅ Developed responsive home.html dashboard with direct routing to games.
+✅ Developed TypeScript-based diagnostic interface with integrated file and screenshot uploads.
 
-✅ Built standalone Cryptogram and Crossword game engines using vanilla JavaScript.
+✅ Engineered backend infrastructure utilizing GCP Firestore for structured bug data.
 
-✅ Integrated Firebase for secure backend data management.
+✅ Implemented Google Cloud Storage for handling large diagnostic attachments.
 
-🔜 Expand puzzle repository databases and implement user authentication for saving scores.
+🔜 Integrate automated bug analysis using AI models to suggest immediate fixes based on uploaded logs.
